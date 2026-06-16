@@ -1,0 +1,46 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function getUser() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    function isAdmin()    { return isSignedIn() && getUser().role == 'admin'; }
+    function isGSO2()     { return isSignedIn() && getUser().role == 'gso2'; }
+    function isDeptHead() { return isSignedIn() && getUser().role == 'depthead'; }
+    function isStudent()  { return isSignedIn() && getUser().role == 'student'; }
+
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      // Student can write their own doc (registration). Admin can write any.
+      allow create: if request.auth.uid == uid;
+      allow update: if request.auth.uid == uid || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /requests/{reqId} {
+      allow read: if isSignedIn();
+      // Students create their own requests
+      allow create: if isSignedIn() && isStudent();
+      // GSO-2 and depthead can update (approve/reject/mark return)
+      allow update: if isSignedIn() && (isAdmin() || isGSO2() || isStudent());
+      allow delete: if isAdmin();
+    }
+
+    match /notifications/{notifId} {
+      allow read:   if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // Public lookup: service number → email only. Used for login before auth.
+    match /serviceNumbers/{sn} {
+      allow read:   if true;
+      allow write:  if isSignedIn();
+    }
+  }
+}

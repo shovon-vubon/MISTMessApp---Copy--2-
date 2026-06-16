@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "MIST Officers' Mess",
+    "slug": "mist-mess-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "scheme": "mistmess",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F1218"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "bd.ac.mist.mess"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0F1218"
+      },
+      "package": "bd.ac.mist.mess",
+      "googleServicesFile": "./google-services.json"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "name": "MIST Officers' Mess",
+      "shortName": "MISTMess",
+      "description": "MIST Officers' Mess In/Out Digital Register",
+      "themeColor": "#B8922A",
+      "backgroundColor": "#0F1218",
+      "display": "standalone",
+      "orientation": "portrait",
+      "startUrl": "/"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "color": "#B8922A",
+          "sounds": []
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}

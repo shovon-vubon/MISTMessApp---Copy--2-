@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Expo build output
+dist/
+web-build/
+.expo/
+
+# Firebase local cache
+.firebase/
+firebase-debug.log
+firestore-debug.log
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+*.log
