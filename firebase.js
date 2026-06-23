@@ -5,31 +5,30 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 export const firebaseConfig = {
-  apiKey:            "AIzaSyBftKXVIJY_x72U8y9ImBydpw7kgvJ1Z50",
-  authDomain:        "mist-mess-app.firebaseapp.com",
-  projectId:         "mist-mess-app",
-  storageBucket:     "mist-mess-app.firebasestorage.app",
-  messagingSenderId: "631534157963",
-  appId:             "1:631534157963:web:8da7f536cd7852ab69948e",
-  measurementId:     "G-ZQ331Y20MN",
+  apiKey:            "AIzaSyAviH_klhIokMmgKuvamHK8e96J29GHpZY",
+  authDomain:        "outpassregister-mist.firebaseapp.com",
+  projectId:         "outpassregister-mist",
+  storageBucket:     "outpassregister-mist.firebasestorage.app",
+  messagingSenderId: "249253436325",
+  appId:             "1:249253436325:web:ff386d5a5c9c43d9db664c",
+  measurementId:     "G-GM73EL6NFL",
 };
 
-export const FCM_VAPID_KEY = "BElSsmnui-Fq7vvDeBs6fgF3uKmEwKfSe9thgrSgkiKDPfTFSBMGFgoUEOKt_6syiUTIxZGe09FhUPIElZ1rWxk";
+export const FCM_VAPID_KEY = "BJ65Gkhn33gPmyYMVy5FgzlgnmTVFDbTKnA3kMk1T-K8zTd0lp2_0z1aufTwO1kaptIHkW9eFGQezNbzZlxt3dM";
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-let auth;
-if (Platform.OS === 'web') {
-  auth = getAuth(app);
-} else {
-  try {
-    auth = initializeAuth(app, {
-      persistence: getReactNativePersistence(AsyncStorage),
-    });
-  } catch {
-    auth = getAuth(app);
-  }
-}
+const auth = Platform.OS === 'web'
+  ? getAuth(app)
+  : (() => {
+      try {
+        return initializeAuth(app, {
+          persistence: getReactNativePersistence(AsyncStorage),
+        });
+      } catch {
+        return getAuth(app);
+      }
+    })();
 
 const db = getFirestore(app);
 
