@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform,
+  StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { signInWithEmailAndPassword } from 'firebase/auth';
@@ -63,7 +63,7 @@ export default function LoginScreen() {
         <View style={s.card}>
           {/* Emblem */}
           <View style={s.emblem}>
-            <View style={s.ring}><Text style={s.ringText}>MIST</Text></View>
+            <Image source={require('../assets/mist-logo.png')} style={s.logo} />
             <Text style={s.title}>Out Pass Register</Text>
             <Text style={s.subtitle}>IN / OUT DIGITAL REGISTER · MIST BANGLADESH</Text>
           </View>
@@ -98,7 +98,12 @@ export default function LoginScreen() {
             {busy ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>SIGN IN</Text>}
           </TouchableOpacity>
 
+          <TouchableOpacity style={s.forgotLink} onPress={() => router.push('/forgot-password')}>
+            <Text style={s.forgotText}>Forgot Password?</Text>
+          </TouchableOpacity>
+
         </View>
+
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -110,8 +115,7 @@ const s = StyleSheet.create({
   center:       { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.bg },
   card:         { backgroundColor: COLORS.bg2, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, padding: 24, borderTopWidth: 3, borderTopColor: COLORS.gold },
   emblem:       { alignItems: 'center', marginBottom: 24 },
-  ring:         { width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: COLORS.gold, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bg3, marginBottom: 10 },
-  ringText:     { color: COLORS.gold, fontSize: 16, fontWeight: '800', letterSpacing: 2 },
+  logo:         { width: 90, height: 90, marginBottom: 10, resizeMode: 'contain' },
   title:        { color: COLORS.gold, fontSize: 20, fontWeight: '800', letterSpacing: 1.5, textTransform: 'uppercase' },
   subtitle:     { color: COLORS.text3, fontSize: 10, marginTop: 4, letterSpacing: 0.5, textAlign: 'center' },
   tabs:         { flexDirection: 'row', borderRadius: 8, borderWidth: 1, borderColor: COLORS.border, overflow: 'hidden', marginBottom: 20 },
@@ -124,4 +128,6 @@ const s = StyleSheet.create({
   error:        { color: COLORS.red, fontSize: 12, marginBottom: 10 },
   btn:          { backgroundColor: COLORS.gold, borderRadius: 8, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
   btnText:      { color: '#000', fontWeight: '800', fontSize: 13, letterSpacing: 1 },
+  forgotLink:   { marginTop: 14, alignItems: 'center' },
+  forgotText:   { color: COLORS.text3, fontSize: 13 },
 });

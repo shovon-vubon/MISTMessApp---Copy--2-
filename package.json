@@ -8,11 +8,18 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build:web": "expo export -p web",
-    "deploy": "expo export -p web && firebase deploy --only hosting"
+    "deploy": "expo export -p web && firebase deploy --only hosting",
+    "postinstall": "node -e \"var fs=require('fs'),p='node_modules/react-native-screens/android/spotless.gradle';if(!fs.existsSync(p))fs.writeFileSync(p,'// placeholder\\n')\""
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.0",
+    "@capacitor/cli": "^8.4.0",
+    "@capacitor/core": "^8.4.0",
+    "@capacitor/local-notifications": "^8.2.0",
+    "@capacitor/push-notifications": "^8.1.1",
     "@expo/vector-icons": "^14.0.2",
     "@react-native-async-storage/async-storage": "1.23.1",
+    "@react-native-community/datetimepicker": "8.0.1",
     "@react-navigation/bottom-tabs": "^6.6.1",
     "@react-navigation/drawer": "^6.7.2",
     "@react-navigation/native": "^6.1.18",

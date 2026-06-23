@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { collection, query, where, orderBy, onSnapshot, limit } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../src/context/AuthContext';
 import { useNotifications } from '../../src/hooks/useNotifications';
+import { notify } from '../../src/utils/notify';
 import StatusBadge from '../../src/components/StatusBadge';
 import MetricCard from '../../src/components/MetricCard';
 import { COLORS } from '../../src/constants/theme';
@@ -33,6 +34,7 @@ export default function StudentDashboard() {
   const [requests, setRequests] = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [refresh,  setRefresh]  = useState(false);
+  const initialLoad = useRef(true);
 
   useNotifications((token) => saveFcmToken(token));
 
@@ -45,6 +47,19 @@ export default function StudentDashboard() {
       limit(20)
     );
     return onSnapshot(q, (snap) => {
+      if (!initialLoad.current) {
+        snap.docChanges().forEach(change => {
+          if (change.type === 'modified') {
+            const d = change.doc.data();
+            if (d.status === 'approved') {
+              notify('Request Approved', 'Your out-pass request has been approved!');
+            } else if (d.status === 'rejected') {
+              notify('Request Rejected', d.remarks ? `Rejected: ${d.remarks}` : 'Your out-pass request was rejected.');
+            }
+          }
+        });
+      }
+      initialLoad.current = false;
       setRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
       setRefresh(false);

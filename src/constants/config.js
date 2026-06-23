@@ -1,4 +1,4 @@
-export const DEPARTMENTS = ['CSE', 'CE', 'ME', 'EECE'];
+export const DEPARTMENTS = ['CSE', 'CE', 'ME', 'EECE', 'AE', 'NAME', 'ARCHI'];
 
 export const SERVICE_PREFIXES = [
   { label: 'Army (BA)',       value: 'BA' },

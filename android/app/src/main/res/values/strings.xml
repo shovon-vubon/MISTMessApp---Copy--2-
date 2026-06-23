@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Out Pass Register - MIST</string>
+    <string name="title_activity_main">Out Pass Register - MIST</string>
+    <string name="package_name">bd.ac.mist.mess</string>
+    <string name="custom_url_scheme">bd.ac.mist.mess</string>
+</resources>

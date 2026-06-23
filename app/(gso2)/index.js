@@ -5,6 +5,7 @@ import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, serverTi
 import { db } from '../../firebase';
 import { useAuth } from '../../src/context/AuthContext';
 import { useNotifications } from '../../src/hooks/useNotifications';
+import { notify } from '../../src/utils/notify';
 import StatusBadge from '../../src/components/StatusBadge';
 import MetricCard from '../../src/components/MetricCard';
 import { COLORS } from '../../src/constants/theme';
@@ -13,13 +14,6 @@ import { format } from 'date-fns';
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const fmtDate  = d => { try { return format(new Date(d), 'dd MMM yyyy'); } catch { return d || '—'; } };
 
-function pushNotify(title, body) {
-  if (Platform.OS === 'web') {
-    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-      new Notification(title, { body, icon: '/favicon.png' });
-    }
-  }
-}
 
 export default function GSO2Dashboard() {
   const { profile, saveFcmToken } = useAuth();
@@ -47,7 +41,7 @@ export default function GSO2Dashboard() {
         snap.docChanges().forEach(change => {
           if (change.type === 'added') {
             const d = change.doc.data();
-            pushNotify('New Out-Pass Request', `${d.studentName} (${d.serviceNumber || d.dept}) submitted a request.`);
+            notify('New Out-Pass Request', `${d.studentName} (${d.serviceNumber || d.dept}) submitted a request.`);
           }
         });
       }
@@ -68,7 +62,7 @@ export default function GSO2Dashboard() {
         snap.docChanges().forEach(change => {
           if (change.type === 'added') {
             const d = change.doc.data();
-            pushNotify('Student Returned', `${d.fromName} returned to mess at ${d.arrivalTime} hrs.`);
+            notify('Student Returned', `${d.fromName} returned to mess at ${d.arrivalTime} hrs.`);
           }
         });
       }
@@ -130,19 +124,6 @@ export default function GSO2Dashboard() {
         <MetricCard value={all.length}                                  label="Total"    color={COLORS.text}  />
         <MetricCard value={todayReqs.length}                            label="Today"    color={COLORS.blue}  />
         <MetricCard value={all.filter(r=>r.status==='approved').length} label="Approved" color={COLORS.green} />
-      </View>
-
-      {/* Quick nav */}
-      <View style={s.navRow}>
-        <TouchableOpacity style={s.navBtn} onPress={() => router.push('/(gso2)/pending')}>
-          <Text style={s.navBtnText}>⧖ Pending ({pending.length})</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={s.navBtn} onPress={() => router.push('/(gso2)/records')}>
-          <Text style={s.navBtnText}>≡ All Records</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={s.navBtn} onPress={() => router.push('/(gso2)/overdue')}>
-          <Text style={s.navBtnText}>⚠ Overdue</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Pending Approvals inline */}

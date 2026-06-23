@@ -26,7 +26,7 @@ export default function AppHeader({ title, showBack = false, right }) {
         <View style={styles.brand}>
           <View style={styles.ring}><Text style={styles.ringText}>MIST</Text></View>
           <View>
-            <Text style={styles.brandName}>Officers' Mess</Text>
+            <Text style={styles.brandName}>Out Pass Register MIST</Text>
             {title && <Text style={styles.pageTitle}>{title}</Text>}
           </View>
         </View>

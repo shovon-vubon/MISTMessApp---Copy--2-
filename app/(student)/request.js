@@ -8,6 +8,8 @@ import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'fire
 import { db } from '../../firebase';
 import { useAuth } from '../../src/context/AuthContext';
 import { COLORS } from '../../src/constants/theme';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Pressable } from 'react-native';
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
@@ -22,12 +24,104 @@ export default function StudentRequest() {
   const [error, setError]         = useState('');
   const [showConfirm, setConfirm] = useState(false);
   const [success, setSuccess]     = useState(false);
+  const [showOutPicker, setShowOutPicker] = useState(false);
+  const [showReturnPicker, setShowReturnPicker] = useState(false);
+  const [showReasonPicker, setShowReasonPicker] = useState(false);
+  const [selectedReason, setSelectedReason]     = useState('');
+
+  const REASONS = ['Medical Emergency', 'Family Meeting', 'Blood Donation', 'Visiting Restaurant','Attending Wedding','Shopping','Other'];
+
+  // Custom Time Picker Modal Component
+  const TimeModal = ({ visible, value, onSelect, onClose, title }) => {
+    const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+    const minutes = ['00', '10', '20','30', '40', '50'];
+
+    const [h, m] = (value || '12:00').split(':');
+    const [selH, setSelH] = useState(h);
+    const [selM, setSelM] = useState(m);
+
+    return (
+      <Modal visible={visible} transparent animationType="fade">
+        <View style={s.overlay}>
+          <View style={s.modal}>
+            <Text style={s.modalTitle}>{title}</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginVertical: 20 }}>
+              <View style={{ width: '45%' }}>
+                <Text style={s.label}>Hour</Text>
+                <ScrollView style={{ height: 150 }} nestedScrollEnabled>
+                  {hours.map(item => (
+                    <TouchableOpacity
+                      key={item}
+                      onPress={() => setSelH(item)}
+                      style={[s.timeItem, selH === item && s.timeItemSel]}
+                    >
+                      <Text style={[s.timeItemText, selH === item && s.timeItemTextSel]}>{item}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+              <View style={{ width: '45%' }}>
+                <Text style={s.label}>Minute</Text>
+                <ScrollView style={{ height: 150 }} nestedScrollEnabled>
+                  {minutes.map(item => (
+                    <TouchableOpacity
+                      key={item}
+                      onPress={() => setSelM(item)}
+                      style={[s.timeItem, selM === item && s.timeItemSel]}
+                    >
+                      <Text style={[s.timeItemText, selM === item && s.timeItemTextSel]}>{item}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+            <View style={s.modalBtns}>
+              <TouchableOpacity style={s.btnGhost2} onPress={onClose}>
+                <Text style={s.btnGhostText}>CANCEL</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.btnGold2} onPress={() => onSelect(`${selH}:${selM}`)}>
+                <Text style={s.btnGoldText}>SET TIME</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
+  // Custom Reason Picker Modal Component
+  const ReasonModal = ({ visible, onSelect, onClose }) => {
+    return (
+      <Modal visible={visible} transparent animationType="fade">
+        <View style={s.overlay}>
+          <View style={s.modal}>
+            <Text style={s.modalTitle}>Select Reason</Text>
+            <ScrollView style={{ maxHeight: 300, marginVertical: 15 }}>
+              {REASONS.map(item => (
+                <TouchableOpacity
+                  key={item}
+                  onPress={() => onSelect(item)}
+                  style={[s.timeItem, selectedReason === item && s.timeItemSel]}
+                >
+                  <Text style={[s.timeItemText, selectedReason === item && s.timeItemTextSel]}>{item}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity style={s.btnGhost2} onPress={onClose}>
+              <Text style={s.btnGhostText}>CANCEL</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
 
   useFocusEffect(useCallback(() => {
     setDate(todayStr());
     setOutTime('');
     setReturn('');
     setCause('');
+    setSelectedReason('');
     setError('');
     setSuccess(false);
     setBusy(false);
@@ -46,6 +140,12 @@ export default function StudentRequest() {
     }
     setError(''); setConfirm(true);
   }
+
+  const formatTime = (date) => {
+    const h = String(date.getHours()).padStart(2, '0');
+    const m = String(date.getMinutes()).padStart(2, '0');
+    return `${h}:${m}`;
+  };
 
   async function doSubmit() {
     setBusy(true); setConfirm(false);
@@ -103,13 +203,44 @@ export default function StudentRequest() {
           <Text style={s.cardSub}>Returns after 2200 hrs require GSO-2 approval.</Text>
 
           <Text style={s.label}>Date *</Text>
-          <TextInput style={s.input} placeholderTextColor={COLORS.text3} placeholder="YYYY-MM-DD" value={date} onChangeText={setDate} />
+          <TextInput
+            style={s.input}
+            value={date}
+            onChangeText={setDate}
+            placeholder="YYYY-MM-DD"
+            placeholderTextColor={COLORS.text3}
+            {...Platform.select({ web: { type: 'date' } })}
+          />
 
           <Text style={s.label}>Departure Time (HH:MM) *</Text>
-          <TextInput style={s.input} placeholderTextColor={COLORS.text3} placeholder="e.g. 20:00" value={outTime} onChangeText={setOutTime} />
+          <TouchableOpacity style={s.pickerTrigger} onPress={() => setShowOutPicker(true)}>
+            <Text style={[s.pickerTriggerText, !outTime && { color: COLORS.text3 }]}>
+              {outTime ? `${outTime} hrs` : 'Select Departure Time'}
+            </Text>
+          </TouchableOpacity>
+
+          <TimeModal
+            visible={showOutPicker}
+            title="Departure Time"
+            value={outTime}
+            onSelect={(val) => { setOutTime(val); setShowOutPicker(false); }}
+            onClose={() => setShowOutPicker(false)}
+          />
 
           <Text style={s.label}>Expected Return Time (HH:MM) *</Text>
-          <TextInput style={s.input} placeholderTextColor={COLORS.text3} placeholder="e.g. 23:00" value={returnTime} onChangeText={setReturn} />
+          <TouchableOpacity style={s.pickerTrigger} onPress={() => setShowReturnPicker(true)}>
+            <Text style={[s.pickerTriggerText, !returnTime && { color: COLORS.text3 }]}>
+              {returnTime ? `${returnTime} hrs` : 'Select Return Time'}
+            </Text>
+          </TouchableOpacity>
+
+          <TimeModal
+            visible={showReturnPicker}
+            title="Expected Return Time"
+            value={returnTime}
+            onSelect={(val) => { setReturn(val); setShowReturnPicker(false); }}
+            onClose={() => setShowReturnPicker(false)}
+          />
           {isCurfew() && (
             <View style={s.warnBox}>
               <Text style={s.warnText}>⚠ Return after 2200 hrs — GSO-2 approval required.</Text>
@@ -117,11 +248,30 @@ export default function StudentRequest() {
           )}
 
           <Text style={s.label}>Reason / Cause *</Text>
-          <TextInput
-            style={[s.input, s.textarea]} placeholderTextColor={COLORS.text3}
-            placeholder="State clearly: medical, family emergency, official duty, personal…"
-            value={cause} onChangeText={setCause} multiline numberOfLines={4}
+          <TouchableOpacity style={s.pickerTrigger} onPress={() => setShowReasonPicker(true)}>
+            <Text style={[s.pickerTriggerText, !selectedReason && { color: COLORS.text3 }]}>
+              {selectedReason || 'Select Reason'}
+            </Text>
+          </TouchableOpacity>
+
+          <ReasonModal
+            visible={showReasonPicker}
+            onSelect={(val) => {
+              setSelectedReason(val);
+              setShowReasonPicker(false);
+              if (val !== 'Other') setCause(val);
+              else setCause('');
+            }}
+            onClose={() => setShowReasonPicker(false)}
           />
+
+          {selectedReason === 'Other' && (
+            <TextInput
+              style={[s.input, s.textarea]} placeholderTextColor={COLORS.text3}
+              placeholder="State your reason clearly…"
+              value={cause} onChangeText={setCause} multiline numberOfLines={4}
+            />
+          )}
 
           {!!error && <Text style={s.error}>{error}</Text>}
 
@@ -183,6 +333,12 @@ const s = StyleSheet.create({
   cardSub:     { color: COLORS.text3, fontSize: 12, marginBottom: 18 },
   label:       { color: COLORS.text2, fontSize: 12, marginBottom: 6 },
   input:       { backgroundColor: COLORS.bg3, borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, color: COLORS.text, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, marginBottom: 12 },
+  pickerTrigger: { backgroundColor: COLORS.bg3, borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 13, marginBottom: 12, justifyContent: 'center' },
+  pickerTriggerText: { color: COLORS.text, fontSize: 14 },
+  timeItem:    { paddingVertical: 10, alignItems: 'center', borderRadius: 6, marginBottom: 4 },
+  timeItemSel: { backgroundColor: COLORS.gold + '33', borderWidth: 1, borderColor: COLORS.gold },
+  timeItemText: { color: COLORS.text2, fontSize: 16 },
+  timeItemTextSel: { color: COLORS.gold, fontWeight: '700' },
   textarea:    { height: 90, textAlignVertical: 'top' },
   warnBox:     { backgroundColor: COLORS.amberBg, borderRadius: 6, padding: 8, marginBottom: 10, borderWidth: 1, borderColor: COLORS.amber },
   warnText:    { color: COLORS.amber, fontSize: 12 },

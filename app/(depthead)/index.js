@@ -33,11 +33,13 @@ export default function DeptHeadDashboard() {
 
   const dept    = profile?.dept;
   const isAll   = dept === 'ALL' || !dept;
-  const total   = requests.length;
-  const pending = requests.filter(r => r.status === 'pending').length;
-  const today   = requests.filter(r => r.date === todayStr()).length;
-  const approved= requests.filter(r => r.status === 'approved').length;
-  const rejected= requests.filter(r => r.status === 'rejected').length;
+
+  const todayReqs = requests.filter(r => r.date === todayStr());
+  const total   = todayReqs.length;
+  const pending = todayReqs.filter(r => r.status === 'pending').length;
+  const approved= todayReqs.filter(r => r.status === 'approved').length;
+  const rejected= todayReqs.filter(r => r.status === 'rejected').length;
+  const allTimePending = requests.filter(r => r.status === 'pending').length;
 
   const DEPTS = DEPARTMENTS;
 
@@ -49,20 +51,19 @@ export default function DeptHeadDashboard() {
       <Text style={s.heading}>Dept Head Dashboard</Text>
       <Text style={s.sub}>{profile?.name} · Dept: {dept || 'ALL'}</Text>
 
-      {pending > 0 && (
+      {allTimePending > 0 && (
         <View style={s.pendingBanner}>
           <View style={s.notifDot} />
-          <Text style={s.bannerText}>{pending} pending request(s) awaiting GSO-2 approval</Text>
+          <Text style={s.bannerText}>{allTimePending} total pending request(s) awaiting GSO-2 approval</Text>
         </View>
       )}
 
       {/* Metrics */}
       <View style={s.metrics}>
-        <MetricCard value={total}    label="Total"    color={COLORS.text}  />
-        <MetricCard value={pending}  label="Pending"  color={COLORS.amber} />
-        <MetricCard value={today}    label="Today"    color={COLORS.blue}  />
-        <MetricCard value={approved} label="Approved" color={COLORS.green} />
-        <MetricCard value={rejected} label="Rejected" color={COLORS.red}   />
+        <MetricCard value={total}    label="Today's Total" color={COLORS.text}  />
+        <MetricCard value={pending}  label="Pending"       color={COLORS.amber} />
+        <MetricCard value={approved} label="Approved"      color={COLORS.green} />
+        <MetricCard value={rejected} label="Rejected"      color={COLORS.red}   />
       </View>
 
       <TouchableOpacity style={s.recordsBtn} onPress={() => router.push('/(depthead)/records')}>
@@ -72,10 +73,10 @@ export default function DeptHeadDashboard() {
       {/* Per-dept breakdown (only if watching all depts) */}
       {isAll && (
         <View style={s.card}>
-          <Text style={s.cardTitle}>◫ Department Breakdown</Text>
+          <Text style={s.cardTitle}>◫ Today's Department Breakdown</Text>
           <View style={s.deptGrid}>
             {DEPTS.map(d => {
-              const dr = requests.filter(r => r.dept === d);
+              const dr = requests.filter(r => r.dept === d && r.date === todayStr());
               const dp = dr.filter(r => r.status === 'pending').length;
               const da = dr.filter(r => r.status === 'approved').length;
               const dj = dr.filter(r => r.status === 'rejected').length;
@@ -83,7 +84,7 @@ export default function DeptHeadDashboard() {
                 <View key={d} style={s.deptBox}>
                   <Text style={s.deptLabel}>{d}</Text>
                   <Text style={s.deptTotal}>{dr.length}</Text>
-                  <Text style={s.deptSub}>requests</Text>
+                  <Text style={s.deptSub}>today's requests</Text>
                   <View style={s.chips}>
                     <View style={[s.chip, { backgroundColor: COLORS.amberBg }]}><Text style={[s.chipText, { color: COLORS.amber }]}>{dp} pending</Text></View>
                     <View style={[s.chip, { backgroundColor: COLORS.greenBg }]}><Text style={[s.chipText, { color: COLORS.green }]}>{da} approved</Text></View>

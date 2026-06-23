@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
@@ -33,6 +34,10 @@ export function AuthProvider({ children }) {
 
   async function logout() {
     await signOut(auth);
+    if (Platform.OS === 'web') {
+      window.location.replace('/');
+      return;
+    }
     setUser(null);
     setProfile(null);
   }

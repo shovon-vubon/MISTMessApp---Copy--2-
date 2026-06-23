@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform,
+  StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { createUserWithEmailAndPassword, signOut } from 'firebase/auth';
@@ -91,8 +91,8 @@ export default function RegisterScreen() {
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
         <View style={s.card}>
           <View style={s.emblem}>
-            <View style={s.ring}><Text style={s.ringText}>MIST</Text></View>
-            <Text style={s.title}>Officers' Mess</Text>
+            <Image source={require('../assets/mist-logo.png')} style={s.logo} />
+            <Text style={s.title}>OUTPASS Register</Text>
             <Text style={s.subtitle}>STUDENT OFFICER REGISTRATION</Text>
           </View>
 
@@ -113,13 +113,13 @@ export default function RegisterScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-            <TextInput
+          </View>
+          <TextInput
               style={[s.input, { flex: 1, marginBottom: 0 }]}
               placeholder="e.g. 01234" placeholderTextColor={COLORS.text3}
               value={svcNum} onChangeText={setSvcNum}
               autoCapitalize="characters"
             />
-          </View>
           <Text style={s.hint}>Service Number: {prefix}-{svcNum.toUpperCase() || 'XXXXX'}</Text>
 
           <Picker label="Rank *" options={RANKS_BY_PREFIX[prefix]} value={rank} onChange={setRank} />
@@ -170,8 +170,7 @@ const s = StyleSheet.create({
   scroll:        { flexGrow: 1, padding: 20 },
   card:          { backgroundColor: COLORS.bg2, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, padding: 24, borderTopWidth: 3, borderTopColor: COLORS.gold },
   emblem:        { alignItems: 'center', marginBottom: 20 },
-  ring:          { width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: COLORS.gold, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bg3, marginBottom: 8 },
-  ringText:      { color: COLORS.gold, fontSize: 13, fontWeight: '800', letterSpacing: 2 },
+  logo:          { width: 90, height: 90, marginBottom: 10, resizeMode: 'contain' },
   title:         { color: COLORS.gold, fontSize: 18, fontWeight: '800', letterSpacing: 1 },
   subtitle:      { color: COLORS.text3, fontSize: 10, marginTop: 3, letterSpacing: 0.5 },
   tabs:          { flexDirection: 'row', borderRadius: 8, borderWidth: 1, borderColor: COLORS.border, overflow: 'hidden', marginBottom: 18 },
@@ -189,7 +188,7 @@ const s = StyleSheet.create({
   optionActive:  { borderColor: COLORS.gold, backgroundColor: COLORS.goldDim },
   optionText:    { color: COLORS.text2, fontSize: 12, fontWeight: '600' },
   optionTextActive:{ color: '#000', fontWeight: '700' },
-  hint:          { color: COLORS.text3, fontSize: 11, marginBottom: 12, marginTop: -4 },
+  hint:          { color: COLORS.text3, fontSize: 11, marginBottom: 12, marginTop: 4 },
   msgBox:        { borderWidth: 1, borderRadius: 8, padding: 10, marginBottom: 12 },
   btn:           { backgroundColor: COLORS.gold, borderRadius: 8, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
   btnText:       { color: '#000', fontWeight: '800', fontSize: 12, letterSpacing: 0.8 },
