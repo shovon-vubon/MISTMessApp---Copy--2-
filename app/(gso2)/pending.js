@@ -23,6 +23,9 @@ export default function GSO2Pending() {
     return onSnapshot(q, (snap) => {
       setPending(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false); setRefresh(false);
+    }, (err) => {
+      console.warn('Firestore error:', err.message);
+      setLoading(false); setRefresh(false);
     });
   }, [profile]);
 

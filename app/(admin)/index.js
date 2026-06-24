@@ -32,12 +32,19 @@ export default function AdminDashboard() {
     const unsub1 = onSnapshot(query(collection(db, 'users'), orderBy('createdAt', 'desc')), (snap) => {
       setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false); setRefresh(false);
+    }, (err) => {
+      console.warn('Firestore error:', err.message);
+      setLoading(false); setRefresh(false);
     });
     const unsub2 = onSnapshot(query(collection(db, 'requests'), orderBy('createdAt', 'desc')), (snap) => {
       setRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, (err) => {
+      console.warn('Firestore error:', err.message);
     });
     const unsub3 = onSnapshot(query(collection(db, 'passwordResetRequests'), orderBy('createdAt', 'desc')), (snap) => {
       setPwdResets(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, (err) => {
+      console.warn('Firestore error:', err.message);
     });
     return () => { unsub1(); unsub2(); unsub3(); };
   }, []);

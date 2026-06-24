@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Modal, TextInput, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Modal, TextInput } from 'react-native';
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../src/context/AuthContext';
@@ -17,7 +16,6 @@ const fmtDate  = d => { try { return format(new Date(d), 'dd MMM yyyy'); } catch
 
 export default function GSO2Dashboard() {
   const { profile, saveFcmToken } = useAuth();
-  const router   = useRouter();
   const [all,      setAll]     = useState([]);
   const [pending,  setPending] = useState([]);
   const [arrivals, setArrivals]= useState([]);
@@ -50,6 +48,9 @@ export default function GSO2Dashboard() {
       setAll(docs);
       setPending(docs.filter(r => r.status === 'pending'));
       setLoading(false); setRefresh(false);
+    }, (err) => {
+      console.warn('Firestore error:', err.message);
+      setLoading(false); setRefresh(false);
     });
     return unsub;
   }, [profile]);
@@ -68,6 +69,8 @@ export default function GSO2Dashboard() {
       }
       arrivalsInitial.current = false;
       setArrivals(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, (err) => {
+      console.warn('Firestore error:', err.message);
     });
   }, [profile]);
 

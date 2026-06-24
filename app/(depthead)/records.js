@@ -27,6 +27,9 @@ export default function DeptHeadRecords() {
     return onSnapshot(q, (snap) => {
       setAll(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false); setRefresh(false);
+    }, (err) => {
+      console.warn('Firestore error:', err.message);
+      setLoading(false); setRefresh(false);
     });
   }, [profile]);
 

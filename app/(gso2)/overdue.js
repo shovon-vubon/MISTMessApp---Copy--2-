@@ -36,6 +36,9 @@ export default function GSO2Overdue() {
       const docs = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(isOverdue);
       setRequests(docs);
       setLoading(false); setRefresh(false);
+    }, (err) => {
+      console.warn('Firestore error:', err.message);
+      setLoading(false); setRefresh(false);
     });
   }, [profile]);
 

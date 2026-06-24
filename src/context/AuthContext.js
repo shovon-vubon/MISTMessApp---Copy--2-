@@ -18,7 +18,7 @@ export function AuthProvider({ children }) {
         if (snap.exists()) {
           const data = snap.data();
           setUser(firebaseUser);
-          setProfile(data);
+          setProfile({ ...data, uid: firebaseUser.uid });
         } else {
           setUser(null);
           setProfile(null);
@@ -45,7 +45,7 @@ export function AuthProvider({ children }) {
   async function refreshProfile() {
     if (!user) return;
     const snap = await getDoc(doc(db, 'users', user.uid));
-    if (snap.exists()) setProfile(snap.data());
+    if (snap.exists()) setProfile({ ...snap.data(), uid: user.uid });
   }
 
   async function saveFcmToken(token) {

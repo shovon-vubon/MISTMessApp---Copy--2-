@@ -25,6 +25,9 @@ export default function StudentHistory() {
     const unsub = onSnapshot(q, (snap) => {
       setRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false); setRefresh(false);
+    }, (err) => {
+      console.warn('Firestore error:', err.message);
+      setLoading(false); setRefresh(false);
     });
     return unsub;
   }, [profile]);
