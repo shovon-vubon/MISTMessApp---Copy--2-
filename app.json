@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "MIST Officers' Mess",
-    "slug": "mist-mess-app",
-    "version": "1.0.0",
+    "name": "Out Pass Register- Mist",
+    "slug": "Out Pass Register- Mist",
+    "version": "2.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -18,7 +18,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/mist-logo.png",
         "backgroundColor": "#0F1218"
       },
       "package": "bd.ac.mist.mess",
@@ -27,9 +27,9 @@
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro",
-      "name": "MIST Officers' Mess",
-      "shortName": "MISTMess",
-      "description": "MIST Officers' Mess In/Out Digital Register",
+      "name": "Out Pass Register- Mist",
+      "shortName": "OutPassRegister",
+      "description": "A Daily Out Pass Register App for MIST Student Officers",
       "themeColor": "#B8922A",
       "backgroundColor": "#0F1218",
       "display": "standalone",
