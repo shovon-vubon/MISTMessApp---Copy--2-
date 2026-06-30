@@ -14,6 +14,7 @@ const TITLES = {
   pending: 'Pending Requests',
   records: 'All Records',
   overdue: 'Overdue Alerts',
+  students: 'Students List',
 };
 
 export default function GSO2Layout() {
@@ -51,6 +52,7 @@ export default function GSO2Layout() {
       <Tabs.Screen name="pending" options={{ tabBarLabel: 'Pending',   tabBarIcon: ({ color }) => <TabIcon char="⧖" color={color} /> }} />
       <Tabs.Screen name="records" options={{ tabBarLabel: 'Records',   tabBarIcon: ({ color }) => <TabIcon char="≡" color={color} /> }} />
       <Tabs.Screen name="overdue" options={{ tabBarLabel: 'Overdue',   tabBarIcon: ({ color }) => <TabIcon char="⚠" color={color} /> }} />
+      <Tabs.Screen name="students" options={{ tabBarLabel: 'Students', tabBarIcon: ({ color }) => <TabIcon char="👥" color={color} /> }} />
     </Tabs>
   );
 }
