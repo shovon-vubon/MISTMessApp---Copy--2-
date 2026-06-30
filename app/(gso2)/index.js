@@ -94,7 +94,7 @@ export default function GSO2Dashboard() {
   }
 
   const todayReqs = all.filter(r => r.date === todayStr());
-  const unreadArrivals = arrivals.filter(a => !a.read);
+  const unreadArrivals = arrivals.filter(a => !a.read && a.date === todayStr());
 
   return (
     <ScrollView
@@ -117,6 +117,9 @@ export default function GSO2Dashboard() {
           </View>
         </View>
       )}
+      {unreadArrivals.length === 0 && (
+        <Text style={s.empty}>No students returned today upto now </Text>
+      )}
 
       {/* Pending banner */}
       {pending.length > 0 && (
@@ -129,8 +132,8 @@ export default function GSO2Dashboard() {
       {/* Metrics */}
       <View style={s.metrics}>
         <MetricCard value={pending.length}                              label="Pending"  color={COLORS.amber} />
-        <MetricCard value={all.length}                                  label="Total"    color={COLORS.text}  />
         <MetricCard value={todayReqs.length}                            label="Today"    color={COLORS.blue}  />
+        <MetricCard value={all.length}                                  label="Total"    color={COLORS.text}  />
         <MetricCard value={all.filter(r=>r.status==='approved').length} label="Approved" color={COLORS.green} />
       </View>
 
