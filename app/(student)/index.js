@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
-import { collection, query, where, orderBy, onSnapshot, limit } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, limit, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../src/context/AuthContext';
 import { notify } from '../../src/utils/notify';
@@ -152,6 +152,22 @@ export default function StudentDashboard() {
           <Text style={styles.cardCause}>{last.cause}</Text>
           <Text style={styles.cardMeta}>Departure: {last.outTime} {'·'} Return by: {last.expectedReturn}</Text>
           {last.remarks ? <Text style={styles.cardRemarks}>Remarks: {last.remarks}</Text> : null}
+          {last.status === 'pending' && (
+          <View style={[styles.deleteDoc, { backgroundColor: COLORS.redBg, borderColor: COLORS.red, borderRadius: 6, paddingVertical: 6, paddingHorizontal: 10 }]}>
+          <TouchableOpacity onPress={async () => {
+            try {
+              await deleteDoc(doc(db, 'requests', last.id));
+              alert('Your last request has been cancelled successfully.');
+            }
+            catch (err) {
+              console.warn('Error deleting request:', err.message);
+              alert('Error cancelling request: ' + err.message);
+            }
+          }}>
+          <Text style={{ color: COLORS.red, fontSize: 10, fontWeight: '800' }}>Cancel Request</Text>
+          </TouchableOpacity>
+          </View>
+          )}
         </View>
       )}
 
@@ -233,4 +249,6 @@ const styles = StyleSheet.create({
   tlCause:       { color: COLORS.text, fontSize: 12 },
   viewAllBtn:    { marginTop: 10, alignItems: 'center' },
   viewAllText:   { color: COLORS.gold, fontSize: 13, fontWeight: '600' },
+  deleteDoc:         { backgroundColor: COLORS.redBg, borderWidth: 1, borderColor: COLORS.red, borderRadius: 6, paddingVertical: 6, paddingHorizontal: 10 },
+  deleteDocText:     { color: COLORS.red, fontSize: 10, fontWeight: '800' },
 });
