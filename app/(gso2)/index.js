@@ -3,7 +3,6 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../src/context/AuthContext';
-import { useNotifications } from '../../src/hooks/useNotifications';
 import { notify } from '../../src/utils/notify';
 import StatusBadge from '../../src/components/StatusBadge';
 import MetricCard from '../../src/components/MetricCard';
@@ -15,7 +14,7 @@ const fmtDate  = d => { try { return format(new Date(d), 'dd MMM yyyy'); } catch
 
 
 export default function GSO2Dashboard() {
-  const { profile, saveFcmToken } = useAuth();
+  const { profile } = useAuth();
   const [all,      setAll]     = useState([]);
   const [pending,  setPending] = useState([]);
   const [arrivals, setArrivals]= useState([]);
@@ -25,8 +24,6 @@ export default function GSO2Dashboard() {
   const [rejectId,    setRejectId]    = useState(null);
   const [remarks,     setRemarks]     = useState('');
   const [busy,        setBusy]        = useState(false);
-
-  useNotifications((token) => saveFcmToken(token));
 
   const reqsInitial     = useRef(true);
   const arrivalsInitial = useRef(true);

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "249253436325",
+    "project_id": "outpassregister-mist",
+    "storage_bucket": "outpassregister-mist.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:249253436325:android:6e0c4e5f7d62b0eddb664c",
+        "android_client_info": {
+          "package_name": "bd.ac.mist.mess"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB9KjcA5QxzJxsFqCCMMz7ztPMm4jtByF8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

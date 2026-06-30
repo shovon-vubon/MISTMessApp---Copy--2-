@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { Platform } from 'react-native';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -48,10 +48,37 @@ export function AuthProvider({ children }) {
     if (snap.exists()) setProfile({ ...snap.data(), uid: user.uid });
   }
 
-  async function saveFcmToken(token) {
-    if (!user) return;
-    await setDoc(doc(db, 'users', user.uid), { fcmToken: token, fcmUpdatedAt: serverTimestamp() }, { merge: true });
+  const saveFcmToken = useCallback(async (token) => {
+  try {
+    if (!user || !token) return;
+
+    const userRef = doc(db, 'users', user.uid);
+    const snap = await getDoc(userRef);
+
+    // Skip update if the token is already the same
+    if (snap.exists()) {
+      const currentToken = snap.data().fcmToken;
+      if (currentToken === token) {
+        console.log("FCM token is already up to date.");
+        return;
+      }
+    }
+
+    await setDoc(
+      userRef,
+      {
+        fcmToken: token,
+        fcmUpdatedAt: serverTimestamp(),
+        platform: Platform.OS,
+      },
+      { merge: true }
+    );
+
+    console.log("FCM token saved successfully.");
+  } catch (error) {
+    console.error("Failed to save FCM token:", error);
   }
+}, [user]);
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, logout, refreshProfile, saveFcmToken }}>

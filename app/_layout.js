@@ -4,13 +4,16 @@ import { PaperProvider } from 'react-native-paper';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { PAPER_THEME } from '../src/constants/theme';
+import { useNotifications } from '../src/hooks/useNotifications';
 
 const PROTECTED = ['(student)', '(gso2)', '(depthead)', '(admin)'];
 
 function AuthGate() {
-  const { user, loading } = useAuth();
+  const { user, loading, saveFcmToken } = useAuth();
   const router   = useRouter();
   const segments = useSegments();
+
+  useNotifications(user ? saveFcmToken : null);
 
   useEffect(() => {
     if (loading) return;
