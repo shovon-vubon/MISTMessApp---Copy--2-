@@ -32,6 +32,16 @@ const auth = Platform.OS === 'web'
 
 const db = getFirestore(app);
 
+// Set to true ONLY for local emulator testing in a browser on your dev machine.
+// Must stay false for any build that runs on a device (Capacitor/native), because
+// inside a WebView "localhost" is the phone itself — pointing Firebase there makes
+// every Auth/Firestore call hang and the app gets stuck on the loading spinner.
+const USE_EMULATORS = false;
+
+function isCapacitorNative() {
+  return typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.() === true;
+}
+
 let _emulatorsConnected = false;
 function connectEmulators() {
   if (_emulatorsConnected) return;
@@ -40,7 +50,7 @@ function connectEmulators() {
   _emulatorsConnected = true;
 }
 
-if (__DEV__) {
+if (USE_EMULATORS && Platform.OS === 'web' && !isCapacitorNative()) {
   connectEmulators();
 }
 

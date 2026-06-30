@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Modal, TextInput } from 'react-native';
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../src/context/AuthContext';
-import { useNotifications } from '../../src/hooks/useNotifications';
+import { apiPost } from '../../src/utils/api';
 import { notify } from '../../src/utils/notify';
 import StatusBadge from '../../src/components/StatusBadge';
 import MetricCard from '../../src/components/MetricCard';
@@ -15,7 +15,7 @@ const fmtDate  = d => { try { return format(new Date(d), 'dd MMM yyyy'); } catch
 
 
 export default function GSO2Dashboard() {
-  const { profile, saveFcmToken } = useAuth();
+  const { profile } = useAuth();
   const [all,      setAll]     = useState([]);
   const [pending,  setPending] = useState([]);
   const [arrivals, setArrivals]= useState([]);
@@ -25,8 +25,6 @@ export default function GSO2Dashboard() {
   const [rejectId,    setRejectId]    = useState(null);
   const [remarks,     setRemarks]     = useState('');
   const [busy,        setBusy]        = useState(false);
-
-  useNotifications((token) => saveFcmToken(token));
 
   const reqsInitial     = useRef(true);
   const arrivalsInitial = useRef(true);
@@ -76,14 +74,21 @@ export default function GSO2Dashboard() {
 
   async function doApprove(id) {
     setBusy(true);
-    await updateDoc(doc(db, 'requests', id), { status: 'approved', approvedBy: profile.uid, approvedByName: profile.name, approvedAt: serverTimestamp() });
-    await addDoc(collection(db, 'notifications'), { type: 'approval', reqId: id, toDept: profile.dept, toRole: 'student', approvedBy: profile.name, read: false, createdAt: serverTimestamp() });
+    try {
+      await apiPost(`/api/requests/${id}/approve`);
+    } catch (e) {
+      notify('Approve failed', e.message);
+    }
     setBusy(false);
   }
 
   async function doReject() {
     setBusy(true);
-    await updateDoc(doc(db, 'requests', rejectId), { status: 'rejected', approvedBy: profile.uid, approvedByName: profile.name, remarks, approvedAt: serverTimestamp() });
+    try {
+      await apiPost(`/api/requests/${rejectId}/reject`, { remarks });
+    } catch (e) {
+      notify('Reject failed', e.message);
+    }
     setRejectModal(false); setRemarks(''); setRejectId(null);
     setBusy(false);
   }

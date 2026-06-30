@@ -4,7 +4,6 @@ import { useRouter } from 'expo-router';
 import { collection, query, where, orderBy, onSnapshot, limit } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../src/context/AuthContext';
-import { useNotifications } from '../../src/hooks/useNotifications';
 import { notify } from '../../src/utils/notify';
 import StatusBadge from '../../src/components/StatusBadge';
 import MetricCard from '../../src/components/MetricCard';
@@ -29,14 +28,12 @@ function fmtDate(d) {
 // ────────────────────────────────────────────────────────────────────────────
 
 export default function StudentDashboard() {
-  const { profile, saveFcmToken } = useAuth();
+  const { profile } = useAuth();
   const router   = useRouter();
   const [requests, setRequests] = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [refresh,  setRefresh]  = useState(false);
   const initialLoad = useRef(true);
-
-  useNotifications((token) => saveFcmToken(token));
 
   useEffect(() => {
     if (!profile) return;

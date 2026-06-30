@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Modal, TextInput, RefreshControl } from 'react-native';
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../src/context/AuthContext';
+import { apiPost } from '../../src/utils/api';
+import { notify } from '../../src/utils/notify';
 import { COLORS } from '../../src/constants/theme';
 import { format } from 'date-fns';
 
@@ -31,13 +33,21 @@ export default function GSO2Pending() {
 
   async function approve(id) {
     setBusy(true);
-    await updateDoc(doc(db, 'requests', id), { status: 'approved', approvedBy: profile.uid, approvedByName: profile.name, approvedAt: serverTimestamp() });
+    try {
+      await apiPost(`/api/requests/${id}/approve`);
+    } catch (e) {
+      notify('Approve failed', e.message);
+    }
     setBusy(false);
   }
 
   async function reject() {
     setBusy(true);
-    await updateDoc(doc(db, 'requests', rejectId), { status: 'rejected', approvedBy: profile.uid, approvedByName: profile.name, remarks, approvedAt: serverTimestamp() });
+    try {
+      await apiPost(`/api/requests/${rejectId}/reject`, { remarks });
+    } catch (e) {
+      notify('Reject failed', e.message);
+    }
     setRejectId(null); setRemarks(''); setBusy(false);
   }
 
