@@ -4,21 +4,24 @@ import {
   ActivityIndicator, RefreshControl, Modal, TextInput,
 } from 'react-native';
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, getDocs, serverTimestamp, deleteDoc } from 'firebase/firestore';
-import { sendPasswordResetEmail } from 'firebase/auth';
+import { getAuth, deleteUser } from 'firebase/auth';
 import { db, auth } from '../../firebase';
 import { useAuth } from '../../src/context/AuthContext';
 import MetricCard from '../../src/components/MetricCard';
 import StatusBadge from '../../src/components/StatusBadge';
 import { COLORS } from '../../src/constants/theme';
-import { DEPARTMENTS } from '../../src/constants/config';
 import { format } from 'date-fns';
-
 const fmtDate = d => { try { return format(new Date(d), 'dd MMM yyyy, HH:mm'); } catch { return d || '—'; } };
+import { getFunctions, httpsCallable } from "firebase/functions";
+
 
 export default function AdminDashboard() {
-  const { profile } = useAuth();
-  const [users,         setUsers]         = useState([]);
-  const [refresh,       setRefresh]       = useState(false);
+    const { profile } = useAuth();
+    const [users,         setUsers]         = useState([]);
+    const [refresh,       setRefresh]       = useState(false);
+    const [loading,       setLoading]       = useState(true);
+    const functions = getFunctions();
+    const deleteUserAccount = httpsCallable(functions, "deleteUserAccount");
 
   useEffect(() => {
     const unsub1 = onSnapshot(query(collection(db, 'users'), orderBy('createdAt', 'desc')), (snap) => {
@@ -28,17 +31,7 @@ export default function AdminDashboard() {
       console.warn('Firestore error:', err.message);
       setLoading(false); setRefresh(false);
     });
-    const unsub2 = onSnapshot(query(collection(db, 'requests'), orderBy('createdAt', 'desc')), (snap) => {
-      setRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    }, (err) => {
-      console.warn('Firestore error:', err.message);
-    });
-    const unsub3 = onSnapshot(query(collection(db, 'passwordResetRequests'), orderBy('createdAt', 'desc')), (snap) => {
-      setPwdResets(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    }, (err) => {
-      console.warn('Firestore error:', err.message);
-    });
-    return () => { unsub1(); unsub2(); unsub3(); };
+    return () => { unsub1(); };
   }, []);
 
     const dept=profile.dept;
@@ -49,6 +42,8 @@ export default function AdminDashboard() {
       style={s.screen} contentContainerStyle={s.content}
       refreshControl={<RefreshControl refreshing={refresh} onRefresh={() => setRefresh(true)} tintColor={COLORS.gold} />}
     >
+        {loading && <ActivityIndicator color={COLORS.gold} style={{ marginTop: 30 }} />}
+
         <View>
           <Text style={s.sectionTitle}>All Students ({students.length})</Text>
           {students.map(u => (
@@ -60,6 +55,21 @@ export default function AdminDashboard() {
               </View>
               <View style={[s.regStatusBadge, { backgroundColor: u.regStatus === 'approved' ? COLORS.greenBg : u.regStatus === 'rejected' ? COLORS.redBg : COLORS.amberBg, borderColor: u.regStatus === 'approved' ? COLORS.green : u.regStatus === 'rejected' ? COLORS.red : COLORS.amber }]}>
                 <Text style={{ color: u.regStatus === 'approved' ? COLORS.green : u.regStatus === 'rejected' ? COLORS.red : COLORS.amber, fontSize: 10, fontWeight: '700' }}>{u.regStatus?.toUpperCase() || 'PENDING'}</Text>
+              </View>
+              <View style={[s.deleteDoc, { backgroundColor: COLORS.redBg, borderColor: COLORS.red, borderRadius: 6, paddingVertical: 6, paddingHorizontal: 10 }]}>
+                <TouchableOpacity onPress={async () => {
+                  try {
+                    await deleteDoc(doc(db, 'users', u.id));
+                    await deleteUserAccount({ targetUid: u.id });
+                    alert(`Successfully deleted user ${u.name}`);
+                }
+                  catch (err) {
+                    console.warn('Error deleting user:', err.message);
+                    alert('Error deleting user: ' + err.message);
+                  }
+                }}>
+                  <Text style={{ color: COLORS.red, fontSize: 10, fontWeight: '800' }}>DELETE</Text>
+                </TouchableOpacity>
               </View>
             </View>
           ))}
@@ -88,6 +98,8 @@ const s = StyleSheet.create({
   deptCard:         { backgroundColor: COLORS.bg2, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, padding: 16, marginBottom: 12, borderLeftWidth: 3, borderLeftColor: COLORS.gold },
   deptName:         { color: COLORS.gold, fontSize: 15, fontWeight: '800', marginBottom: 10, letterSpacing: 1 },
   deptStats:        { flexDirection: 'row', gap: 16, marginBottom: 10 },
+  deleteDoc:         { backgroundColor: COLORS.redBg, borderWidth: 1, borderColor: COLORS.red, borderRadius: 6, paddingVertical: 6, paddingHorizontal: 10 },
+  deleteDocText:     { color: COLORS.red, fontSize: 10, fontWeight: '800' },
   stat:             { alignItems: 'center' },
   statVal:          { color: COLORS.text, fontSize: 20, fontWeight: '800' },
   statLabel:        { color: COLORS.text3, fontSize: 10, marginTop: 2 },
