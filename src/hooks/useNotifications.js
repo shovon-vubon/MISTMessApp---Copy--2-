@@ -13,6 +13,7 @@ export function useNotifications(onTokenReceived) {
       setupNativePush(onTokenReceived);
     } else if (Platform.OS === 'web') {
       setupWebPush(onTokenReceived);
+      console.log("Web push setup complete");
     }
   }, []);
 }
