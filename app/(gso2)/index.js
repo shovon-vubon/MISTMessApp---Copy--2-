@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Modal, TextInput } from 'react-native';
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../src/context/AuthContext';
+import { apiPost } from '../../src/utils/api';
 import { notify } from '../../src/utils/notify';
 import StatusBadge from '../../src/components/StatusBadge';
 import MetricCard from '../../src/components/MetricCard';
@@ -73,20 +74,27 @@ export default function GSO2Dashboard() {
 
   async function doApprove(id) {
     setBusy(true);
-    await updateDoc(doc(db, 'requests', id), { status: 'approved', approvedBy: profile.uid, approvedByName: profile.name, approvedAt: serverTimestamp() });
-    await addDoc(collection(db, 'notifications'), { type: 'approval', reqId: id, toDept: profile.dept, toRole: 'student', approvedBy: profile.name, read: false, createdAt: serverTimestamp() });
+    try {
+      await apiPost(`/api/requests/${id}/approve`);
+    } catch (e) {
+      notify('Approve failed', e.message);
+    }
     setBusy(false);
   }
 
   async function doReject() {
     setBusy(true);
-    await updateDoc(doc(db, 'requests', rejectId), { status: 'rejected', approvedBy: profile.uid, approvedByName: profile.name, remarks, approvedAt: serverTimestamp() });
+    try {
+      await apiPost(`/api/requests/${rejectId}/reject`, { remarks });
+    } catch (e) {
+      notify('Reject failed', e.message);
+    }
     setRejectModal(false); setRemarks(''); setRejectId(null);
     setBusy(false);
   }
 
   const todayReqs = all.filter(r => r.date === todayStr());
-  const unreadArrivals = arrivals.filter(a => !a.read);
+  const unreadArrivals = arrivals.filter(a => !a.read && a.date === todayStr());
 
   return (
     <ScrollView
@@ -109,6 +117,9 @@ export default function GSO2Dashboard() {
           </View>
         </View>
       )}
+      {unreadArrivals.length === 0 && (
+        <Text style={s.empty}>No students returned today upto now </Text>
+      )}
 
       {/* Pending banner */}
       {pending.length > 0 && (
@@ -121,8 +132,8 @@ export default function GSO2Dashboard() {
       {/* Metrics */}
       <View style={s.metrics}>
         <MetricCard value={pending.length}                              label="Pending"  color={COLORS.amber} />
-        <MetricCard value={all.length}                                  label="Total"    color={COLORS.text}  />
         <MetricCard value={todayReqs.length}                            label="Today"    color={COLORS.blue}  />
+        <MetricCard value={all.length}                                  label="Total"    color={COLORS.text}  />
         <MetricCard value={all.filter(r=>r.status==='approved').length} label="Approved" color={COLORS.green} />
       </View>
 
