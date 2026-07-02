@@ -13,9 +13,9 @@ export function useNotifications(onTokenReceived) {
       setupNativePush(onTokenReceived);
     } else if (Platform.OS === 'web') {
       setupWebPush(onTokenReceived);
-      console.log("Web push setup complete");
+  
     }
-  }, []);
+  }, [onTokenReceived]);
 }
 
 async function setupNativePush(onTokenReceived) {
@@ -30,13 +30,24 @@ async function setupNativePush(onTokenReceived) {
       return;
     }
 
-    PushNotifications.addListener('registration', (token) => {
-      console.log("FCM TOKEN:", token.value);
+   PushNotifications.addListener('registration', async (token) => {
+  console.log("================================");
+  console.log("Registration callback fired");
+  console.log("Token:", token.value);
+  console.log("Callback exists:", !!onTokenReceived);
 
-      if (token.value && onTokenReceived) {
-        onTokenReceived(token.value);
-      }
-    });
+  if (!onTokenReceived) {
+    console.log("saveFcmToken callback is NULL");
+    return;
+  }
+
+  try {
+    await onTokenReceived(token.value);
+    console.log("saveFcmToken finished");
+  } catch (e) {
+    console.error(e);
+  }
+});
 
     PushNotifications.addListener('registrationError', (err) => {
       console.log("Registration error:", JSON.stringify(err));

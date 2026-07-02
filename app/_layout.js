@@ -13,8 +13,7 @@ function AuthGate() {
   const router   = useRouter();
   const segments = useSegments();
 
-  useNotifications(user ? saveFcmToken : null);
-
+useNotifications(saveFcmToken);
   useEffect(() => {
     if (loading) return;
     const inProtected = PROTECTED.includes(segments[0]);
