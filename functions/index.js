@@ -1,5 +1,5 @@
-
 const {onDocumentUpdated} = require("firebase-functions/v2/firestore");
+const {onDocumentCreated} = require("firebase-functions/v2/firestore");
 const {setGlobalOptions} = require("firebase-functions");
 const functions = require("firebase-functions");
 const {admin} = require("./config/firebase");
@@ -52,7 +52,10 @@ exports.deleteUserAccount = functions.https.onCall(async (data, context) => {
 });
 
 exports.notifyStudentOnStatusChange = onDocumentUpdated(
-    "requests/{requestId}",
+    {
+      document: "requests/{requestId}",
+      region: "asia-southeast1",
+    },
     async (event) => {
       const before = event.data.before.data();
       const after = event.data.after.data();
@@ -97,3 +100,74 @@ exports.notifyStudentOnStatusChange = onDocumentUpdated(
       );
     },
 );
+
+exports.notifyGsoOnNewRequest = onDocumentCreated(
+    {
+      document: "requests/{requestId}",
+      region: "asia-southeast1",
+    },
+    async (event) => {
+      const request = event.data.data();
+
+      const gsoUsersSnapshot = await admin.firestore().collection("users")
+          .where("role", "==", "gso2")
+          .where("dept", "==", request.dept)
+          .get();
+
+      const promises = [];
+
+      gsoUsersSnapshot.forEach((doc) => {
+        promises.push(sendPushNotification(
+            doc.id,
+            "New Out Pass Request",
+            `${request.studentName} has submitted a new out pass request.`,
+            {
+              type: "new-request",
+              requestId: event.params.requestId,
+            },
+        ));
+      });
+
+      return Promise.all(promises);
+    },
+);
+
+exports.notifyGsoOnArrival = onDocumentUpdated(
+    {
+      document: "requests/{requestId}",
+      region: "asia-southeast1",
+    },
+    async (event) => {
+      const before = event.data.before.data();
+      const after = event.data.after.data();
+      if (before.arrivalSent === after.arrivalSent) {
+        return;
+      }
+
+      if (!after.arrivalSent) {
+        return;
+      }
+
+      const gsoUsersSnapshot = await admin.firestore().collection("users")
+          .where("role", "==", "gso2")
+          .where("dept", "==", after.dept)
+          .get();
+
+      const promises = [];
+
+      gsoUsersSnapshot.forEach((doc) => {
+        promises.push(sendPushNotification(
+            doc.id,
+            "Student Arrival Notification",
+            `Student ${after.studentName} has arrived.`,
+            {
+              type: "student-arrival",
+              requestId: event.params.requestId,
+            },
+        ));
+      });
+
+      return Promise.all(promises);
+    },
+);
+
