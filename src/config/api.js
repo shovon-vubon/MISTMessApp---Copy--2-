@@ -5,4 +5,4 @@
 // - Local dev on a physical device: your PC's LAN IP, e.g. 'http://192.168.0.10:8080'
 //
 // Replace the placeholder below before building the app.
-export const API_BASE = 'https://REPLACE-WITH-YOUR-BACKEND-URL';
+export const API_BASE = 'https://outpassregister.web.app'; // TODO: Replace with your deployed backend URL

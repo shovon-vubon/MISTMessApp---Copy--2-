@@ -1,9 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Modal, TextInput } from 'react-native';
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../src/context/AuthContext';
-import { apiPost } from '../../src/utils/api';
 import { notify } from '../../src/utils/notify';
 import StatusBadge from '../../src/components/StatusBadge';
 import MetricCard from '../../src/components/MetricCard';
@@ -72,29 +71,20 @@ export default function GSO2Dashboard() {
     });
   }, [profile]);
 
-  async function doApprove(id) {
+  async function approve(id) {
     setBusy(true);
-    try {
-      await apiPost(`/api/requests/${id}/approve`);
-    } catch (e) {
-      notify('Approve failed', e.message);
-    }
+    await updateDoc(doc(db, 'requests', id), { status: 'approved', approvedBy: profile.uid, approvedByName: profile.name, approvedAt: serverTimestamp() });
     setBusy(false);
   }
 
-  async function doReject() {
+  async function reject() {
     setBusy(true);
-    try {
-      await apiPost(`/api/requests/${rejectId}/reject`, { remarks });
-    } catch (e) {
-      notify('Reject failed', e.message);
-    }
-    setRejectModal(false); setRemarks(''); setRejectId(null);
-    setBusy(false);
+    await updateDoc(doc(db, 'requests', rejectId), { status: 'rejected', approvedBy: profile.uid, approvedByName: profile.name, remarks, approvedAt: serverTimestamp() });
+    setRejectId(null); setRemarks(''); setBusy(false);
   }
 
   const todayReqs = all.filter(r => r.date === todayStr());
-  const unreadArrivals = arrivals.filter(a => !a.read && a.date === todayStr());
+  const arrvalsToday = arrivals.filter(a => a.createdAt?.toDate().toISOString().slice(0, 10) === todayStr());   
 
   return (
     <ScrollView
@@ -104,20 +94,20 @@ export default function GSO2Dashboard() {
       {/* Header */}
       <Text style={s.heading}>GSO-2 Dashboard</Text>
       <Text style={s.sub}>{profile?.name} · Dept: {profile?.dept}</Text>
-
+                                                                                                                                             
       {/* New arrival notifications */}
-      {unreadArrivals.length > 0 && (
+      {arrvalsToday.length > 0 && (
         <View style={s.arrivalBanner}>
           <Text style={s.bannerIcon}>🏠</Text>
           <View style={{ flex: 1 }}>
-            <Text style={s.bannerTitle}>{unreadArrivals.length} student(s) returned</Text>
-            {unreadArrivals.slice(0, 3).map(a => (
+            <Text style={s.bannerTitle}>{arrvalsToday.length} student(s) returned</Text>
+            {arrvalsToday.slice(0, 3).map(a => (
               <Text key={a.id} style={s.bannerItem}>• {a.fromName} at {a.arrivalTime} hrs</Text>
             ))}
           </View>
         </View>
       )}
-      {unreadArrivals.length === 0 && (
+      {arrvalsToday.length === 0 && (
         <Text style={s.empty}>No students returned today upto now </Text>
       )}
 
@@ -137,32 +127,38 @@ export default function GSO2Dashboard() {
         <MetricCard value={all.filter(r=>r.status==='approved').length} label="Approved" color={COLORS.green} />
       </View>
 
-      {/* Pending Approvals inline */}
-      {pending.length > 0 && (
-        <View style={s.card}>
-          <Text style={s.cardTitle}>⧖ Pending Approvals ({pending.length})</Text>
-          {loading && <ActivityIndicator color={COLORS.gold} />}
-          {pending.map(r => (
-            <View key={r.id} style={s.pendingCard}>
-              <View style={s.pendingHeader}>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.pendingName}>{r.studentName}</Text>
-                  <Text style={s.pendingMeta}>{r.serviceNumber} · {fmtDate(r.date)} · Out: {r.outTime} · Return: {r.expectedReturn}</Text>
-                  <Text style={s.pendingCause}>{r.cause}</Text>
-                </View>
-              </View>
-              <View style={s.pendingActions}>
-                <TouchableOpacity style={s.approveBtn} onPress={() => doApprove(r.id)} disabled={busy}>
-                  <Text style={s.approveBtnText}>✓ APPROVE</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={s.rejectBtn} onPress={() => { setRejectId(r.id); setRejectModal(true); }}>
-                  <Text style={s.rejectBtnText}>✕ REJECT</Text>
-                </TouchableOpacity>
+      {pending.map((r) => (
+        <View key={r.id} style={{ backgroundColor: COLORS.bg2, borderRadius: 12, borderWidth: 1, borderColor: COLORS.amberBg, padding: 16, marginBottom: 14, borderLeftWidth: 3, borderLeftColor: COLORS.amber }}>
+          <View style={{marginBottom: 8}}>
+            <View style={s.nameBadge}>
+              <View>
+                <Text style={s.name}>{r.studentName}</Text>
+                <Text style={s.svc}>{r.serviceNumber} · {r.rank}</Text>
               </View>
             </View>
-          ))}
+          </View>
+          <View style={s.infoGrid}>
+            {[['Date', fmtDate(r.date)], ['Departure', r.outTime + ' hrs'], ['Return By', r.expectedReturn + ' hrs']].map(([k,v]) => (
+              <View key={k} style={s.infoItem}>
+                <Text style={s.infoKey}>{k}</Text>
+                <Text style={s.infoVal}>{v}</Text>
+              </View>
+            ))}
+          </View>
+          <View style={s.causeBox}>
+            <Text style={s.causeLabel}>REASON</Text>
+            <Text style={s.causeText}>{r.cause}</Text>
+          </View>
+          <View style={s.actions}>
+            <TouchableOpacity style={s.approveBtn} onPress={() => approve(r.id)} disabled={busy}>
+              <Text style={s.approveBtnText}>✓  APPROVE</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={s.rejectBtn} onPress={() => setRejectId(r.id)} disabled={busy}>
+              <Text style={s.rejectBtnText}>✕  REJECT</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      )}
+      ))}
 
       {/* Today's Events */}
       <View style={s.card}>
@@ -180,32 +176,32 @@ export default function GSO2Dashboard() {
           ))
         }
       </View>
-    </ScrollView>
-  );
-}
-
-// Reject modal
-function RejectModal({ visible, onClose, onConfirm, remarks, setRemarks, busy }) {
-  return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View style={s.overlay}>
-        <View style={s.modal}>
-          <Text style={s.modalTitle}>Reject Request</Text>
-          <Text style={s.modalSub}>Optionally add remarks for the student.</Text>
-          <TextInput
-            style={s.remarksInput} placeholderTextColor={COLORS.text3}
-            placeholder="e.g. Insufficient cause" value={remarks} onChangeText={setRemarks}
-            multiline numberOfLines={3}
-          />
-          <View style={s.modalBtns}>
-            <TouchableOpacity style={s.modalCancel} onPress={onClose}><Text style={s.modalCancelText}>CANCEL</Text></TouchableOpacity>
-            <TouchableOpacity style={s.modalConfirm} onPress={onConfirm} disabled={busy}>
-              {busy ? <ActivityIndicator color="#fff" /> : <Text style={s.modalConfirmText}>CONFIRM REJECT</Text>}
-            </TouchableOpacity>
+        
+      {/* Reject modal */}
+      <Modal visible={!!rejectId} transparent animationType="fade">
+        <View style={s.overlay}>
+          <View style={s.modal}>
+            <Text style={s.modalTitle}>Reject Request</Text>
+            <Text style={s.modalSub}>Optionally add remarks for the student officer.</Text>
+            <TextInput
+              style={s.textArea} placeholderTextColor={COLORS.text3}
+              placeholder="e.g. Insufficient cause provided"
+              value={remarks} onChangeText={setRemarks} multiline numberOfLines={3}
+            />
+            <View style={s.modalBtns}>
+              <TouchableOpacity style={s.btnCancel} onPress={() => { setRejectId(null); setRemarks(''); }}>
+                <Text style={s.btnCancelText}>CANCEL</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.btnConfirmReject} onPress={reject} disabled={busy}>
+                {busy ? <ActivityIndicator color="#fff" /> : <Text style={s.btnConfirmRejectText}>CONFIRM REJECTION</Text>}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </View>
-    </Modal>
+      </Modal>
+
+
+    </ScrollView>
   );
 }
 
@@ -251,4 +247,20 @@ const s = StyleSheet.create({
   modalCancelText: { color: COLORS.text2, fontWeight: '700', fontSize: 12 },
   modalConfirm:    { flex: 1, backgroundColor: COLORS.red, borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
   modalConfirmText:{ color: '#fff', fontWeight: '800', fontSize: 12 },
+  textArea:           { backgroundColor: COLORS.bg3, borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, color: COLORS.text, padding: 12, fontSize: 13, marginBottom: 16, minHeight: 70, textAlignVertical: 'top' },
+  btnCancel:          { flex: 1, paddingVertical: 12, borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, alignItems: 'center' },
+  btnCancelText:      { color: COLORS.text2, fontWeight: '700', fontSize: 12 },
+  btnConfirmReject:   { flex: 1, backgroundColor: COLORS.red, borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
+  btnConfirmRejectText:{ color: '#fff', fontWeight: '800', fontSize: 12 },
+  nameBadge:          { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  name:               { color: COLORS.text, fontSize: 15, fontWeight: '700' },
+  svc:                { color: COLORS.text2, fontSize: 11, marginTop: 2 },
+  infoGrid:           { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 6 },
+  infoItem:           { width: '31%', backgroundColor: COLORS.bg3, borderRadius: 6, padding: 6 },
+  infoKey:            { color: COLORS.text2, fontSize: 10, marginBottom: 2, letterSpacing: 0.5 },
+  infoVal:            { color: COLORS.text, fontSize: 12, fontWeight: '600' },
+  causeBox:           { backgroundColor: COLORS.bg3, borderRadius: 8, padding: 6, marginBottom: 8 },
+  causeLabel:         { color: COLORS.text2, fontSize: 10, letterSpacing: 1, marginBottom: 2 },
+  causeText:          { color: COLORS.text, fontSize: 14, fontWeight: '700', lineHeight: 18 },
+  actions:            { flexDirection: 'row', gap: 10 },
 });

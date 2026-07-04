@@ -145,15 +145,17 @@ export default function StudentDashboard() {
 
       {/* Last Request */}
       {last && (
-        <View style={styles.card}>
+        <View style={styles.cardforLastRequest}>
+          <View style={{ flex: 2, justifyContent: 'flex-start', alignItems: 'flex-start' }}>
           <Text style={styles.cardTitle}>{'⊙'} Last Request</Text>
           <Text style={styles.cardDate}>{fmtDate(last.date)}</Text>
           <StatusBadge status={last.status} />
           <Text style={styles.cardCause}>{last.cause}</Text>
           <Text style={styles.cardMeta}>Departure: {last.outTime} {'·'} Return by: {last.expectedReturn}</Text>
+          </View>
           {last.remarks ? <Text style={styles.cardRemarks}>Remarks: {last.remarks}</Text> : null}
           {last.status === 'pending' && (
-          <View style={[styles.deleteDoc, { backgroundColor: COLORS.redBg, borderColor: COLORS.red, borderRadius: 6, paddingVertical: 6, paddingHorizontal: 10 }]}>
+          <View style={styles.deleteDoc}>
           <TouchableOpacity onPress={async () => {
             try {
               await deleteDoc(doc(db, 'requests', last.id));
@@ -164,7 +166,7 @@ export default function StudentDashboard() {
               alert('Error cancelling request: ' + err.message);
             }
           }}>
-          <Text style={{ color: COLORS.red, fontSize: 10, fontWeight: '800' }}>Cancel Request</Text>
+          <Text style={styles.deleteDocText}>Cancel Request</Text>
           </TouchableOpacity>
           </View>
           )}
@@ -234,6 +236,7 @@ const styles = StyleSheet.create({
   btnGhost:      { flex: 1, borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
   btnGhostText:  { color: COLORS.text2, fontWeight: '700', fontSize: 12, letterSpacing: 0.8 },
   card:          { backgroundColor: COLORS.bg2, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, padding: 16, marginBottom: 14 },
+  cardforLastRequest: { flex: 1, flexDirection: 'row', backgroundColor: COLORS.bg2, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, padding: 16, marginBottom: 14 },
   cardTitle:     { color: COLORS.gold, fontSize: 13, fontWeight: '700', marginBottom: 10, letterSpacing: 0.5 },
   cardDate:      { color: COLORS.text2, fontSize: 12, marginBottom: 6 },
   cardCause:     { color: COLORS.text3, fontSize: 12, marginTop: 6 },
@@ -249,6 +252,6 @@ const styles = StyleSheet.create({
   tlCause:       { color: COLORS.text, fontSize: 12 },
   viewAllBtn:    { marginTop: 10, alignItems: 'center' },
   viewAllText:   { color: COLORS.gold, fontSize: 13, fontWeight: '600' },
-  deleteDoc:         { backgroundColor: COLORS.redBg, borderWidth: 1, borderColor: COLORS.red, borderRadius: 6, paddingVertical: 6, paddingHorizontal: 10 },
-  deleteDocText:     { color: COLORS.red, fontSize: 10, fontWeight: '800' },
+  deleteDoc:         { flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 10 },
+  deleteDocText:     { color: COLORS.red, fontSize: 12, fontWeight: '800',  backgroundColor: COLORS.redBg, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 , borderWidth: 1, borderColor: COLORS.red },
 });

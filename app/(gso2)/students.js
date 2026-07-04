@@ -20,6 +20,9 @@ export default function AdminDashboard() {
     const [users,         setUsers]         = useState([]);
     const [refresh,       setRefresh]       = useState(false);
     const [loading,       setLoading]       = useState(true);
+    const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+    const [selectedStudent, setSelectedStudent] = useState(null);
+    const [deleting, setDeleting] = useState(false);
     const functions = getFunctions();
     const deleteUserAccount = httpsCallable(functions, "deleteUserAccount");
 
@@ -34,9 +37,41 @@ export default function AdminDashboard() {
     return () => { unsub1(); };
   }, []);
 
+  const handleDelete = async () => {
+    if (!selectedStudent) return;
+
+    setDeleting(true);
+
+    try {
+      await deleteDoc(doc(db, "users", selectedStudent.id));
+      await deleteUserAccount({
+        targetUid: selectedStudent.id,
+      });
+
+      alert(`Successfully deleted ${selectedStudent.name}`);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setDeleting(false);
+      setDeleteModalVisible(false);
+      setSelectedStudent(null);
+    }
+  };
+
+
     const dept=profile.dept;
     const students   = users.filter(u => u.role === 'student' && u.dept === dept);
-  
+    const groupedStudents = students.reduce((groups, student) => {
+      const batch = student.batch || 'Unknown';
+      if (!groups[batch]) {
+        groups[batch] = [];
+      }
+      groups[batch].push(student);
+      return groups;
+    }, {});
+
+    const sortedBatches = Object.keys(groupedStudents).sort((a, b) => a.localeCompare(b));
+
   return (
     <ScrollView
       style={s.screen} contentContainerStyle={s.content}
@@ -46,34 +81,75 @@ export default function AdminDashboard() {
 
         <View>
           <Text style={s.sectionTitle}>All Students ({students.length})</Text>
-          {students.map(u => (
-            <View key={u.id} style={s.userCard}>
-              <View style={s.userInfo}>
-                <Text style={s.userName}>{u.name}</Text>
-                <Text style={s.userMeta}>{u.serviceNumber} · {u.dept}</Text>
-                <Text style={s.userEmail}>{u.email}</Text>
-              </View>
-              <View style={[s.regStatusBadge, { backgroundColor: u.regStatus === 'approved' ? COLORS.greenBg : u.regStatus === 'rejected' ? COLORS.redBg : COLORS.amberBg, borderColor: u.regStatus === 'approved' ? COLORS.green : u.regStatus === 'rejected' ? COLORS.red : COLORS.amber }]}>
-                <Text style={{ color: u.regStatus === 'approved' ? COLORS.green : u.regStatus === 'rejected' ? COLORS.red : COLORS.amber, fontSize: 10, fontWeight: '700' }}>{u.regStatus?.toUpperCase() || 'PENDING'}</Text>
-              </View>
-              <View style={[s.deleteDoc, { backgroundColor: COLORS.redBg, borderColor: COLORS.red, borderRadius: 6, paddingVertical: 6, paddingHorizontal: 10 }]}>
-                <TouchableOpacity onPress={async () => {
-                  try {
-                    await deleteDoc(doc(db, 'users', u.id));
-                    await deleteUserAccount({ targetUid: u.id });
-                    alert(`Successfully deleted user ${u.name}`);
-                }
-                  catch (err) {
-                    console.warn('Error deleting user:', err.message);
-                    alert('Error deleting user: ' + err.message);
-                  }
-                }}>
-                  <Text style={{ color: COLORS.red, fontSize: 10, fontWeight: '800' }}>DELETE</Text>
+          {sortedBatches.map(batch => (
+            <View key={batch} style={s.deptSection}>
+              <Text style={s.deptSectionTitle}>Batch: {batch} : ({groupedStudents[batch].length}) Student Officers</Text>
+              {groupedStudents[batch].map(student => (
+                <View key={student.id} style={s.userCard}>
+                  <View style={s.userInfo}>
+                    <Text style={s.userName}>{student.name}</Text>  
+                    <Text style={s.userMeta}>{student.serviceNumber} · {student.rank}</Text>
+                    <Text style={s.userEmail}>{student.email}</Text>
+                    </View>
+                    <View style={[s.regStatusBadge, { borderColor: student.regStatus === 'approved' ? COLORS.green : COLORS.red, backgroundColor: student.regStatus === 'approved' ? COLORS.greenBg : COLORS.redBg }]}>
+                      <Text style={{ color: student.regStatus === 'approved' ? COLORS.green : COLORS.red, fontSize: 10, fontWeight: '700' }}>{student.regStatus}</Text>
+                    </View>
+                    <View style={s.deleteDoc}>
+                      <TouchableOpacity onPress={() => {
+                        setSelectedStudent(student);
+                        setDeleteModalVisible(true);
+                      }} style={s.deleteDoc}>
+                        <Text style={s.deleteDocText}>Delete</Text>
+                      </TouchableOpacity> 
+                    </View>
+                </View>
+              ))}
+        </View>
+      ))}
+      </View>
+
+        <Modal visible={deleteModalVisible} transparent animationType="fade" onRequestClose={() => setDeleteModalVisible(false)}>
+          <View style={s.modalOverlay}>
+            <View style={s.modalContainer}>
+              <Text style={s.modalTitle}>Delete Student</Text>
+              {selectedStudent && (
+                <><Text style={s.modalText}>
+                    Are you sure you want to delete this student?
+                  </Text>
+                  <View style={s.infoBox}>
+                    <Text style={s.infoItem}>
+                      <Text style={s.label}>Name: </Text>{selectedStudent.name}</Text>
+                    <Text style={s.infoItem}><Text style={s.label}>Service No: </Text>{selectedStudent.serviceNumber}</Text>
+                    <Text style={s.infoItem}><Text style={s.label}>Department: </Text>{selectedStudent.dept}</Text>
+                    <Text style={s.infoItem}>
+                      <Text style={s.label}>Email: </Text>
+                      {selectedStudent.email}
+                    </Text>
+                    <Text style={s.infoItem}>
+                      <Text style={s.label}>Status: </Text>
+                      {selectedStudent.regStatus}
+                    </Text>
+                  </View>
+                </>
+              )}
+              <View style={s.modalButtons}>
+                <TouchableOpacity style={s.cancelBtn}
+                  onPress={() => {
+                    setDeleteModalVisible(false);
+                    setSelectedStudent(null);
+                  }}>
+                  <Text style={s.cancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={s.deleteBtn} disabled={deleting} onPress={handleDelete}>
+                  {deleting ? (<ActivityIndicator color="#fff" />) : (
+                    <Text style={s.deleteText}> Delete</Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
-          ))}
-        </View>
+          </View>
+        </Modal>
+
     </ScrollView>
   );
 }
@@ -125,4 +201,16 @@ const s = StyleSheet.create({
   reqName:          { color: COLORS.text, fontSize: 13, fontWeight: '600' },
   reqMeta:          { color: COLORS.text3, fontSize: 11, marginTop: 2 },
   reqCause:         { color: COLORS.text2, fontSize: 12 },
+  modalOverlay:     {  flex: 1,  backgroundColor: "rgba(0,0,0,0.6)",justifyContent: "center",  alignItems: "center",},
+  modalContainer:   {  width: "88%",  backgroundColor: COLORS.bg2,borderRadius: 12,  padding: 20,  borderWidth: 1,borderColor: COLORS.border,},
+  modalTitle:       {  color: COLORS.red, fontSize: 20,  fontWeight: "700",  marginBottom: 12,},
+  modalText:        {  color: COLORS.text,  marginBottom: 15,},
+  infoBox:          { backgroundColor: COLORS.bg,borderRadius: 8,  padding: 12,  marginBottom: 20,},
+  infoItem:         {  color: COLORS.text,  marginBottom: 6,},
+  label:            {  fontWeight: "700",  color: COLORS.gold},
+  modalButtons:     {  flexDirection: "row",  justifyContent: "space-between"},
+  cancelBtn:        {  flex: 1,  marginRight: 8,  padding: 12,  borderRadius: 8,  borderWidth: 1,  borderColor: COLORS.border,  alignItems: "center",},
+  deleteBtn:        {  flex: 1,  marginLeft: 8,  padding: 12,  borderRadius: 8,  backgroundColor: COLORS.red,  alignItems: "center",},
+  cancelText:       {  color: COLORS.text, fontWeight: "700",},
+  deleteText:       {  color: "#fff",  fontWeight: "700",},
 });
