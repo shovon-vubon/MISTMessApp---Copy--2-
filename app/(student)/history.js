@@ -54,7 +54,6 @@ export default function StudentHistory() {
           <View style={s.cardHeader}>
             <View>
               <Text style={s.cardDate}>{fmtDate(r.date)}</Text>
-              <Text style={s.cardId}>{r.id}</Text>
             </View>
             <StatusBadge status={r.status} />
           </View>

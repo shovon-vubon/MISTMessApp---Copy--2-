@@ -1,13 +1,10 @@
 import React from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator } from 'react-native';
 import { Tabs, Redirect } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { COLORS } from '../../src/constants/theme';
 import NavHeader from '../../src/components/NavHeader';
-
-function TabIcon({ char, color }) {
-  return <Text style={{ color, fontSize: 16 }}>{char}</Text>;
-}
+import TabBarIcon from '../../src/components/TabBarIcon';
 
 export default function StudentLayout() {
   const { profile, loading } = useAuth();
@@ -40,18 +37,10 @@ export default function StudentLayout() {
         tabBarLabelStyle: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
       })}
     >
-      <Tabs.Screen
-        name="index"
-        options={{ tabBarLabel: 'Dashboard', tabBarIcon: ({ color }) => <TabIcon char="⊞" color={color} /> }}
-      />
-      <Tabs.Screen
-        name="request"
-        options={{ tabBarLabel: 'New Request', tabBarIcon: ({ color }) => <TabIcon char="+" color={color} /> }}
-      />
-      <Tabs.Screen
-        name="history"
-        options={{ tabBarLabel: 'History', tabBarIcon: ({ color }) => <TabIcon char="≡" color={color} /> }}
-      />
+      <Tabs.Screen name="index"   options={{ tabBarLabel: 'Dashboard',    tabBarIcon: (p) => <TabBarIcon name="grid" {...p} /> }} />
+      <Tabs.Screen name="request" options={{ tabBarLabel: 'New Request', tabBarIcon: (p) => <TabBarIcon name="add-circle" {...p} /> }} />
+      <Tabs.Screen name="history" options={{ tabBarLabel: 'History',     tabBarIcon: (p) => <TabBarIcon name="time" {...p} /> }} />
+      <Tabs.Screen name="notices" options={{ tabBarLabel: 'Notices',     tabBarIcon: (p) => <TabBarIcon name="megaphone" {...p} /> }} />
       <Tabs.Screen name="arrival" options={{ href: null }} />
     </Tabs>
   );
@@ -61,5 +50,6 @@ const SCREEN_TITLES = {
   index:   'Student Dashboard',
   request: 'New Request',
   history: 'Request History',
+  notices: 'Notices',
   arrival: 'Return to Mess',
 };

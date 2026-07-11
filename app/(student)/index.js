@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { collection, query, where, orderBy, onSnapshot, limit, doc, deleteDoc } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from '../../firebase';
 import { useAuth } from '../../src/context/AuthContext';
 import { notify } from '../../src/utils/notify';
@@ -33,7 +34,29 @@ export default function StudentDashboard() {
   const [requests, setRequests] = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [refresh,  setRefresh]  = useState(false);
+  const [latestNotice, setLatestNotice] = useState(null);
+  const [seenNoticeId, setSeenNoticeId] = useState(undefined);
   const initialLoad = useRef(true);
+
+  useEffect(() => {
+    if (!profile) return;
+    const q = query(
+      collection(db, 'notices'),
+      where('dept', '==', profile.dept || ''),
+      orderBy('createdAt', 'desc'),
+      limit(1)
+    );
+    return onSnapshot(q, (snap) => {
+      setLatestNotice(snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() });
+    }, (err) => console.warn('Firestore error:', err.message));
+  }, [profile]);
+
+  useFocusEffect(useCallback(() => {
+    if (!profile) return;
+    AsyncStorage.getItem(`lastSeenNoticeId_${profile.uid}`).then(setSeenNoticeId);
+  }, [profile]));
+
+  const hasNewNotice = !!latestNotice && seenNoticeId !== undefined && latestNotice.id !== seenNoticeId;
 
   useEffect(() => {
     if (!profile) return;
@@ -122,6 +145,21 @@ export default function StudentDashboard() {
             <Text style={styles.arrivalSub}>Tap to notify GSO-2 you have returned to mess</Text>
           </View>
           <Text style={styles.arrivalArrow}>{'→'}</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* New Notice Banner */}
+      {hasNewNotice && (
+        <TouchableOpacity
+          style={styles.noticeBanner}
+          onPress={() => router.push('/(student)/notices')}
+        >
+          <Text style={styles.noticeIcon}>📢</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.noticeTitle}>New Notice: {latestNotice.title || 'Untitled'}</Text>
+            <Text style={styles.noticeSub} numberOfLines={1}>{latestNotice.body}</Text>
+          </View>
+          <Text style={styles.noticeArrow}>{'→'}</Text>
         </TouchableOpacity>
       )}
 
@@ -229,6 +267,11 @@ const styles = StyleSheet.create({
   arrivalTitle:  { color: COLORS.amber, fontWeight: '700', fontSize: 13 },
   arrivalSub:    { color: COLORS.text2, fontSize: 11, marginTop: 2 },
   arrivalArrow:  { color: COLORS.amber, fontSize: 18, fontWeight: '700' },
+  noticeBanner:  { backgroundColor: COLORS.blueBg, borderWidth: 1, borderColor: COLORS.blue, borderRadius: 10, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 },
+  noticeIcon:    { fontSize: 22 },
+  noticeTitle:   { color: COLORS.blue, fontWeight: '700', fontSize: 13 },
+  noticeSub:     { color: COLORS.text2, fontSize: 11, marginTop: 2 },
+  noticeArrow:   { color: COLORS.blue, fontSize: 18, fontWeight: '700' },
   metrics:       { flexDirection: 'row', gap: 8, marginBottom: 14 },
   actions:       { flexDirection: 'row', gap: 10, marginBottom: 14 },
   btnGold:       { flex: 1, backgroundColor: COLORS.gold, borderRadius: 8, paddingVertical: 12, alignItems: 'center' },

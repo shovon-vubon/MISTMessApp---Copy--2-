@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import {
-  View, Text, TextInput, TouchableOpacity, ScrollView,
+import {  View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { collection, query, where, getDocs, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { sendPasswordResetEmail } from 'firebase/auth';
+import { db, auth } from '../firebase';
 import { COLORS } from '../src/constants/theme';
 
 export default function ForgotPasswordScreen() {
@@ -21,42 +21,23 @@ export default function ForgotPasswordScreen() {
     setBusy(true); setError('');
     try {
       let email = val.toLowerCase();
-      let serviceNumber = '';
-      let name = '';
 
       const svcMatch = val.toUpperCase().match(/^(BA|BD|BN)-?(.+)$/);
       if (svcMatch) {
         const normalised = `${svcMatch[1]}-${svcMatch[2]}`;
-        serviceNumber = normalised;
         const snSnap = await getDoc(doc(db, 'serviceNumbers', normalised));
         if (!snSnap.exists()) { setError('Service number not found.'); setBusy(false); return; }
         email = snSnap.data().email;
       }
 
-      const userSnap = await getDocs(query(collection(db, 'users'), where('email', '==', email)));
-      if (userSnap.empty) { setError('No account found with that service number or email.'); setBusy(false); return; }
-      const userData = userSnap.docs[0].data();
-      name = userData.name || '';
-      if (!serviceNumber) serviceNumber = userData.serviceNumber || '';
-
-      // Prevent duplicate pending requests
-      const dupSnap = await getDocs(query(
-        collection(db, 'passwordResetRequests'),
-        where('email', '==', email),
-        where('status', '==', 'pending'),
-      ));
-      if (!dupSnap.empty) { setSuccess(true); setBusy(false); return; }
-
-      await addDoc(collection(db, 'passwordResetRequests'), {
-        email,
-        serviceNumber,
-        name,
-        status: 'pending',
-        createdAt: serverTimestamp(),
-      });
+      await sendPasswordResetEmail(auth, email);
       setSuccess(true);
-    } catch {
-      setError('Something went wrong. Please try again.');
+    } catch (err) {
+      if (err.code === 'auth/user-not-found') {
+        setError('No account found with that service number or email.');
+      } else {
+        setError('Something went wrong. Please try again.');
+      }
     }
     setBusy(false);
   }
@@ -66,10 +47,11 @@ export default function ForgotPasswordScreen() {
       <View style={s.screen}>
         <View style={s.card}>
           <Text style={s.successIcon}>✓</Text>
-          <Text style={s.successTitle}>Request Submitted</Text>
+          <Text style={s.successTitle}>Check Your Email</Text>
           <Text style={s.successText}>
-            Your password reset request has been submitted to the admin. You will receive a reset link on your registered email once it is approved.
+            A password reset link has been sent to your registered email. Follow the link to set a new password.
           </Text>
+          <Text style ={s.highlightText}>If you don't see the email, check your spam folder.</Text>
           <TouchableOpacity style={s.btn} onPress={() => router.replace('/')}>
             <Text style={s.btnText}>BACK TO LOGIN</Text>
           </TouchableOpacity>
@@ -85,7 +67,7 @@ export default function ForgotPasswordScreen() {
           <View style={s.header}>
             <View style={s.ring}><Text style={s.ringText}>MIST</Text></View>
             <Text style={s.title}>Password Recovery</Text>
-            <Text style={s.subtitle}>Admin approval required to reset password</Text>
+            <Text style={s.subtitle}>We'll email you a link to reset your password</Text>
           </View>
 
           <Text style={s.label}>Service Number or Email</Text>
@@ -99,7 +81,7 @@ export default function ForgotPasswordScreen() {
           {!!error && <Text style={s.error}>{error}</Text>}
 
           <TouchableOpacity style={s.btn} onPress={handleSubmit} disabled={busy}>
-            {busy ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>SUBMIT REQUEST</Text>}
+            {busy ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>SEND RESET LINK</Text>}
           </TouchableOpacity>
 
           <TouchableOpacity style={s.backLink} onPress={() => router.replace('/')}>
@@ -130,4 +112,5 @@ const s = StyleSheet.create({
   successIcon:  { color: COLORS.green, fontSize: 52, textAlign: 'center', marginBottom: 8 },
   successTitle: { color: COLORS.text, fontSize: 18, fontWeight: '800', textAlign: 'center', marginBottom: 10 },
   successText:  { color: COLORS.text2, fontSize: 13, textAlign: 'center', lineHeight: 20, marginBottom: 24 },
+  highlightText: { color: COLORS.gold, fontSize: 13, textAlign: 'center', fontWeight: '800' },
 });

@@ -37,16 +37,18 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Notices: GSO-2 publishes, every signed-in user (students included) can read.
+    match /notices/{noticeId} {
+      allow read:   if isSignedIn();
+      allow create: if isGSO2() || isAdmin();
+      allow update, delete: if isGSO2() || isAdmin();
+    }
+
     // Public lookup: service number → email only. Used for login before auth.
     match /serviceNumbers/{sn} {
       allow read:   if true;
       allow write:  if isSignedIn();
     }
 
-    // Password reset requests: anyone can create (pre-auth), only admin can read/update.
-    match /passwordResetRequests/{reqId} {
-      allow create: if true;
-      allow read, update, delete: if isAdmin();
-    }
   }
 }
