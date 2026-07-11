@@ -1,13 +1,10 @@
 import React from 'react';
-import { Text, View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator } from 'react-native';
 import { Tabs, Redirect } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { COLORS } from '../../src/constants/theme';
 import NavHeader from '../../src/components/NavHeader';
-
-function TabIcon({ char, color }) {
-  return <Text style={{ color, fontSize: 16 }}>{char}</Text>;
-}
+import TabBarIcon from '../../src/components/TabBarIcon';
 
 const TITLES = {
   index:   'GSO-2 Dashboard',
@@ -48,11 +45,11 @@ export default function GSO2Layout() {
         tabBarLabelStyle: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
       })}
     >
-      <Tabs.Screen name="index"   options={{ tabBarLabel: 'Dashboard', tabBarIcon: ({ color }) => <TabIcon char="⊞" color={color} /> }} />
-      <Tabs.Screen name="notices" options={{ tabBarLabel: 'Notices',   tabBarIcon: ({ color }) => <TabIcon char="📢" color={color} /> }} />
-      <Tabs.Screen name="records" options={{ tabBarLabel: 'Records',   tabBarIcon: ({ color }) => <TabIcon char="≡" color={color} /> }} />
-      <Tabs.Screen name="overdue" options={{ tabBarLabel: 'Overdue',   tabBarIcon: ({ color }) => <TabIcon char="⚠" color={color} /> }} />
-      <Tabs.Screen name="students" options={{ tabBarLabel: 'Students', tabBarIcon: ({ color }) => <TabIcon char="👥" color={color} /> }} />
+      <Tabs.Screen name="index"    options={{ tabBarLabel: 'Dashboard', tabBarIcon: (p) => <TabBarIcon name="grid" {...p} /> }} />
+      <Tabs.Screen name="notices"  options={{ tabBarLabel: 'Notices',   tabBarIcon: (p) => <TabBarIcon name="megaphone" {...p} /> }} />
+      <Tabs.Screen name="records"  options={{ tabBarLabel: 'Records',   tabBarIcon: (p) => <TabBarIcon name="list" {...p} /> }} />
+      <Tabs.Screen name="overdue"  options={{ tabBarLabel: 'Overdue',   tabBarIcon: (p) => <TabBarIcon name="warning" {...p} /> }} />
+      <Tabs.Screen name="students" options={{ tabBarLabel: 'Students', tabBarIcon: (p) => <TabBarIcon name="people" {...p} /> }} />
     </Tabs>
   );
 }
