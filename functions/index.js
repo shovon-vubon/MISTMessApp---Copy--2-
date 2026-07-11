@@ -142,6 +142,7 @@ exports.notifyStudentsOnNewNotice = onDocumentCreated(
 
       const studentsSnapshot = await admin.firestore().collection("users")
           .where("role", "==", "student")
+          .where("dept", "==", notice.dept)
           .get();
 
       const promises = [];

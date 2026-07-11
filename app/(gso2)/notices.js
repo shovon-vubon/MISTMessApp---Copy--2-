@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, TextInput, RefreshControl, Modal } from 'react-native';
-import { collection, query, orderBy, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp, where } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../src/context/AuthContext';
 import { COLORS } from '../../src/constants/theme';
@@ -23,7 +23,8 @@ export default function GSO2Notices() {
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    const q = query(collection(db, 'notices'), orderBy('createdAt', 'desc'));
+    if (!profile) return;
+    const q = query(collection(db, 'notices'), where('dept', '==', profile.dept || ''), orderBy('createdAt', 'desc'));
     return onSnapshot(q, (snap) => {
       setNotices(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
@@ -33,7 +34,7 @@ export default function GSO2Notices() {
       setLoading(false);
       setRefresh(false);
     });
-  }, []);
+  }, [profile]);
 
   async function publish() {
     if (!title.trim() || !body.trim()) {
@@ -78,7 +79,7 @@ export default function GSO2Notices() {
       refreshControl={<RefreshControl refreshing={refresh} onRefresh={() => setRefresh(true)} tintColor={COLORS.gold} />}
     >
       <Text style={s.heading}>Notices</Text>
-      <Text style={s.sub}>Publish an announcement to all students</Text>
+      <Text style={s.sub}>Publish an announcement to students in your department</Text>
 
       <View style={s.composer}>
         <TextInput
@@ -130,7 +131,7 @@ export default function GSO2Notices() {
         <View style={s.overlay}>
           <View style={s.modal}>
             <Text style={s.modalTitle}>Delete Notice</Text>
-            <Text style={s.modalSub}>This notice will be removed for all students. Continue?</Text>
+            <Text style={s.modalSub}>This notice will be removed for students in your department. Continue?</Text>
             <View style={s.modalBtns}>
               <TouchableOpacity style={s.btnCancel} onPress={() => setDeleteId(null)} disabled={deleting}>
                 <Text style={s.btnCancelText}>CANCEL</Text>

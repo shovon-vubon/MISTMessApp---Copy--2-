@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { useAuth } from '../../src/context/AuthContext';
 import { notify } from '../../src/utils/notify';
 import { COLORS } from '../../src/constants/theme';
 import { format } from 'date-fns';
@@ -11,13 +12,15 @@ const fmtDateTime = (ts) => {
 };
 
 export default function StudentNotices() {
+  const { profile } = useAuth();
   const [notices, setNotices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refresh, setRefresh] = useState(false);
   const initialLoad = useRef(true);
 
   useEffect(() => {
-    const q = query(collection(db, 'notices'), orderBy('createdAt', 'desc'));
+    if (!profile) return;
+    const q = query(collection(db, 'notices'), where('dept', '==', profile.dept || ''), orderBy('createdAt', 'desc'));
     return onSnapshot(q, (snap) => {
       if (!initialLoad.current) {
         snap.docChanges().forEach(change => {
@@ -36,7 +39,7 @@ export default function StudentNotices() {
       setLoading(false);
       setRefresh(false);
     });
-  }, []);
+  }, [profile]);
 
   return (
     <ScrollView
