@@ -52,6 +52,10 @@ export default function StudentLayout() {
         name="history"
         options={{ tabBarLabel: 'History', tabBarIcon: ({ color }) => <TabIcon char="≡" color={color} /> }}
       />
+      <Tabs.Screen
+        name="notices"
+        options={{ tabBarLabel: 'Notices', tabBarIcon: ({ color }) => <TabIcon char="📢" color={color} /> }}
+      />
       <Tabs.Screen name="arrival" options={{ href: null }} />
     </Tabs>
   );
@@ -61,5 +65,6 @@ const SCREEN_TITLES = {
   index:   'Student Dashboard',
   request: 'New Request',
   history: 'Request History',
+  notices: 'Notices',
   arrival: 'Return to Mess',
 };

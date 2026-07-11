@@ -132,6 +132,36 @@ exports.notifyGsoOnNewRequest = onDocumentCreated(
     },
 );
 
+exports.notifyStudentsOnNewNotice = onDocumentCreated(
+    {
+      document: "notices/{noticeId}",
+      region: "asia-southeast1",
+    },
+    async (event) => {
+      const notice = event.data.data();
+
+      const studentsSnapshot = await admin.firestore().collection("users")
+          .where("role", "==", "student")
+          .get();
+
+      const promises = [];
+
+      studentsSnapshot.forEach((doc) => {
+        promises.push(sendPushNotification(
+            doc.id,
+            notice.title || "New Notice",
+            notice.body || "",
+            {
+              type: "notice",
+              noticeId: event.params.noticeId,
+            },
+        ));
+      });
+
+      return Promise.all(promises);
+    },
+);
+
 exports.notifyGsoOnArrival = onDocumentUpdated(
     {
       document: "requests/{requestId}",
