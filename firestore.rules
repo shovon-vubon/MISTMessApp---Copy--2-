@@ -50,10 +50,5 @@ service cloud.firestore {
       allow write:  if isSignedIn();
     }
 
-    // Password reset requests: anyone can create (pre-auth), only admin can read/update.
-    match /passwordResetRequests/{reqId} {
-      allow create: if true;
-      allow read, update, delete: if isAdmin();
-    }
   }
 }

@@ -4,9 +4,7 @@ import {
   ActivityIndicator, RefreshControl, Modal, TextInput,
 } from 'react-native';
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, getDocs, serverTimestamp, deleteDoc } from 'firebase/firestore';
-import { sendPasswordResetEmail } from 'firebase/auth';
-import { db, auth } from '../../firebase';
-import { useAuth } from '../../src/context/AuthContext';
+import { db } from '../../firebase';
 import MetricCard from '../../src/components/MetricCard';
 import StatusBadge from '../../src/components/StatusBadge';
 import { COLORS } from '../../src/constants/theme';
@@ -16,17 +14,14 @@ import { format } from 'date-fns';
 const fmtDate = d => { try { return format(new Date(d), 'dd MMM yyyy, HH:mm'); } catch { return d || '—'; } };
 
 export default function AdminDashboard() {
-  const { profile } = useAuth();
   const [users,         setUsers]         = useState([]);
   const [requests,      setRequests]      = useState([]);
-  const [pwdResets,     setPwdResets]     = useState([]);
   const [loading,       setLoading]       = useState(true);
   const [refresh,       setRefresh]       = useState(false);
   const [activeTab,     setActiveTab]     = useState('overview');
   const [rejectModal,   setRejectModal]   = useState(false);
   const [selectedUid,   setSelectedUid]   = useState(null);
   const [busy,          setBusy]          = useState(false);
-  const [pwdBusy,       setPwdBusy]       = useState(null);
 
   useEffect(() => {
     const unsub1 = onSnapshot(query(collection(db, 'users'), orderBy('createdAt', 'desc')), (snap) => {
@@ -41,12 +36,7 @@ export default function AdminDashboard() {
     }, (err) => {
       console.warn('Firestore error:', err.message);
     });
-    const unsub3 = onSnapshot(query(collection(db, 'passwordResetRequests'), orderBy('createdAt', 'desc')), (snap) => {
-      setPwdResets(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    }, (err) => {
-      console.warn('Firestore error:', err.message);
-    });
-    return () => { unsub1(); unsub2(); unsub3(); };
+    return () => { unsub1(); unsub2(); };
   }, []);
 
   const students   = users.filter(u => u.role === 'student');
@@ -66,34 +56,7 @@ export default function AdminDashboard() {
     setBusy(false);
   }
 
-  async function approvePwdReset(reqId, email) {
-    setPwdBusy(reqId);
-    try {
-      await sendPasswordResetEmail(auth, email);
-      await updateDoc(doc(db, 'passwordResetRequests', reqId), {
-        status: 'approved',
-        resolvedAt: serverTimestamp(),
-        resolvedBy: profile?.name || 'Admin',
-      });
-    } catch {
-      // reset email failed
-    }
-    setPwdBusy(null);
-  }
-
-  async function rejectPwdReset(reqId) {
-    setPwdBusy(reqId);
-    await updateDoc(doc(db, 'passwordResetRequests', reqId), {
-      status: 'rejected',
-      resolvedAt: serverTimestamp(),
-      resolvedBy: profile?.name || 'Admin',
-    });
-    setPwdBusy(null);
-  }
-
-  const pendingPwdResets = pwdResets.filter(r => r.status === 'pending');
-
-  const TABS = ['overview', 'pending', 'pwd-reset', 'students', 'gso2', 'depthead', 'requests'];
+  const TABS = ['overview', 'pending', 'students', 'gso2', 'depthead', 'requests'];
 
   return (
     <ScrollView
@@ -109,15 +72,6 @@ export default function AdminDashboard() {
           <View style={s.notifDot} />
           <Text style={s.alertText}>{pendingReg.length} pending registration(s) awaiting approval</Text>
           <Text style={s.alertArrow}>→</Text>
-        </TouchableOpacity>
-      )}
-
-      {/* Pending password reset alert */}
-      {pendingPwdResets.length > 0 && (
-        <TouchableOpacity style={[s.alertBanner, { borderColor: COLORS.blue }]} onPress={() => setActiveTab('pwd-reset')}>
-          <View style={[s.notifDot, { backgroundColor: COLORS.blue }]} />
-          <Text style={[s.alertText, { color: COLORS.blue }]}>{pendingPwdResets.length} password reset request(s) awaiting action</Text>
-          <Text style={[s.alertArrow, { color: COLORS.blue }]}>→</Text>
         </TouchableOpacity>
       )}
 
@@ -184,58 +138,6 @@ export default function AdminDashboard() {
                   <Text style={s.rejectBtnText}>REJECT</Text>
                 </TouchableOpacity>
               </View>
-            </View>
-          ))}
-        </View>
-      )}
-
-      {/* Password Reset Requests */}
-      {activeTab === 'pwd-reset' && (
-        <View>
-          <Text style={s.sectionTitle}>Password Reset Requests</Text>
-          {pwdResets.length === 0 && <Text style={s.empty}>No password reset requests</Text>}
-          {pwdResets.map(r => (
-            <View key={r.id} style={[s.userCard, { borderLeftWidth: 3, borderLeftColor: r.status === 'pending' ? COLORS.blue : r.status === 'approved' ? COLORS.green : COLORS.red }]}>
-              <View style={s.userInfo}>
-                <Text style={s.userName}>{r.name || '—'}</Text>
-                <Text style={s.userMeta}>{r.serviceNumber || 'No service number'}</Text>
-                <Text style={s.userEmail}>{r.email}</Text>
-                <Text style={s.userDate}>
-                  Requested: {r.createdAt?.toDate ? fmtDate(r.createdAt.toDate()) : '—'}
-                </Text>
-                {r.status !== 'pending' && (
-                  <Text style={s.userDate}>
-                    {r.status === 'approved' ? '✓ Reset email sent' : '✗ Rejected'} by {r.resolvedBy || 'Admin'}
-                  </Text>
-                )}
-              </View>
-              {r.status === 'pending' ? (
-                <View style={s.userActions}>
-                  <TouchableOpacity
-                    style={[s.approveBtn, { borderColor: COLORS.blue, backgroundColor: COLORS.blueBg }]}
-                    onPress={() => approvePwdReset(r.id, r.email)}
-                    disabled={pwdBusy === r.id}
-                  >
-                    {pwdBusy === r.id
-                      ? <ActivityIndicator color={COLORS.blue} size="small" />
-                      : <Text style={[s.approveBtnText, { color: COLORS.blue }]}>SEND RESET</Text>
-                    }
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={s.rejectBtn}
-                    onPress={() => rejectPwdReset(r.id)}
-                    disabled={pwdBusy === r.id}
-                  >
-                    <Text style={s.rejectBtnText}>REJECT</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <View style={[s.regStatusBadge, { backgroundColor: r.status === 'approved' ? COLORS.greenBg : COLORS.redBg, borderColor: r.status === 'approved' ? COLORS.green : COLORS.red }]}>
-                  <Text style={{ color: r.status === 'approved' ? COLORS.green : COLORS.red, fontSize: 10, fontWeight: '700' }}>
-                    {r.status.toUpperCase()}
-                  </Text>
-                </View>
-              )}
             </View>
           ))}
         </View>
