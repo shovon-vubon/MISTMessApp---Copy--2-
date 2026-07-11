@@ -37,8 +37,8 @@ export default function GSO2Notices() {
   }, [profile]);
 
   async function publish() {
-    if (!title.trim() || !body.trim()) {
-      setFormError('Please enter both a title and a message.');
+    if (!body.trim()) {
+      setFormError('Please enter a message.');
       return;
     }
     setFormError('');

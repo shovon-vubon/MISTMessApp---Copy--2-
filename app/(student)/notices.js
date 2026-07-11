@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from '../../firebase';
 import { useAuth } from '../../src/context/AuthContext';
 import { notify } from '../../src/utils/notify';
@@ -31,7 +32,11 @@ export default function StudentNotices() {
         });
       }
       initialLoad.current = false;
-      setNotices(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setNotices(docs);
+      if (docs.length > 0) {
+        AsyncStorage.setItem(`lastSeenNoticeId_${profile.uid}`, docs[0].id);
+      }
       setLoading(false);
       setRefresh(false);
     }, (err) => {
