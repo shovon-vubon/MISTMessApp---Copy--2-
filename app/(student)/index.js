@@ -1,11 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { collection, query, where, orderBy, onSnapshot, limit, doc, deleteDoc } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from '../../firebase';
 import { useAuth } from '../../src/context/AuthContext';
-import { notify } from '../../src/utils/notify';
 import StatusBadge from '../../src/components/StatusBadge';
 import MetricCard from '../../src/components/MetricCard';
 import { COLORS } from '../../src/constants/theme';
@@ -36,7 +35,6 @@ export default function StudentDashboard() {
   const [refresh,  setRefresh]  = useState(false);
   const [latestNotice, setLatestNotice] = useState(null);
   const [seenNoticeId, setSeenNoticeId] = useState(undefined);
-  const initialLoad = useRef(true);
 
   useEffect(() => {
     if (!profile) return;
@@ -67,19 +65,6 @@ export default function StudentDashboard() {
       limit(20)
     );
     return onSnapshot(q, (snap) => {
-      if (!initialLoad.current) {
-        snap.docChanges().forEach(change => {
-          if (change.type === 'modified') {
-            const d = change.doc.data();
-            if (d.status === 'approved') {
-              notify('Request Approved', 'Your out-pass request has been approved!');
-            } else if (d.status === 'rejected') {
-              notify('Request Rejected', d.remarks ? `Rejected: ${d.remarks}` : 'Your out-pass request was rejected.');
-            }
-          }
-        });
-      }
-      initialLoad.current = false;
       setRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
       setRefresh(false);

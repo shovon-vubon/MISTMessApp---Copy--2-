@@ -1,10 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from '../../firebase';
 import { useAuth } from '../../src/context/AuthContext';
-import { notify } from '../../src/utils/notify';
 import { COLORS } from '../../src/constants/theme';
 import { format } from 'date-fns';
 
@@ -17,21 +16,11 @@ export default function StudentNotices() {
   const [notices, setNotices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refresh, setRefresh] = useState(false);
-  const initialLoad = useRef(true);
 
   useEffect(() => {
     if (!profile) return;
     const q = query(collection(db, 'notices'), where('dept', '==', profile.dept || ''), orderBy('createdAt', 'desc'));
     return onSnapshot(q, (snap) => {
-      if (!initialLoad.current) {
-        snap.docChanges().forEach(change => {
-          if (change.type === 'added') {
-            const d = change.doc.data();
-            notify(d.title || 'New Notice', d.body || '');
-          }
-        });
-      }
-      initialLoad.current = false;
       const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setNotices(docs);
       if (docs.length > 0) {
