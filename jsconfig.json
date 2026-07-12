@@ -2,8 +2,8 @@
   "compilerOptions": {
     "jsx": "react-native",
     "strict": false,
-    "baseUrl": ".",
-    "paths": { "@/*": ["src/*"] }
+    "paths": { "@/*": ["./src/*"] }
   },
-  "include": ["**/*.js", "**/*.jsx"]
+  "include": ["**/*.js", "**/*.jsx"],
+  "exclude": ["node_modules", "dist", ".expo", "android"]
 }

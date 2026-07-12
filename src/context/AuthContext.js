@@ -49,20 +49,22 @@ export function AuthProvider({ children }) {
   }
 
   const saveFcmToken = useCallback(async (token) => {
+  console.log("Saving token...");
+  console.log("Current UID:", user?.uid);
+  console.log("Token:", token);
+
+  if (!user) {
+    console.log("User is null");
+    return;
+  }
+
+  if (!token) {
+    console.log("Token is null");
+    return;
+  }
+
   try {
-    if (!user || !token) return;
-
-    const userRef = doc(db, 'users', user.uid);
-    const snap = await getDoc(userRef);
-
-    // Skip update if the token is already the same
-    if (snap.exists()) {
-      const currentToken = snap.data().fcmToken;
-      if (currentToken === token) {
-        console.log("FCM token is already up to date.");
-        return;
-      }
-    }
+    const userRef = doc(db, "users", user.uid);
 
     await setDoc(
       userRef,
@@ -74,9 +76,13 @@ export function AuthProvider({ children }) {
       { merge: true }
     );
 
-    console.log("FCM token saved successfully.");
-  } catch (error) {
-    console.error("Failed to save FCM token:", error);
+    console.log("Firestore updated successfully");
+
+    const verify = await getDoc(userRef);
+    console.log("Saved token:", verify.data()?.fcmToken);
+
+  } catch (e) {
+    console.error("Firestore write failed:", e);
   }
 }, [user]);
 

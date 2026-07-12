@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp, query, collection, where, getDocs, addDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../src/context/AuthContext';
-import { apiPost } from '../../src/utils/api';
 import { COLORS } from '../../src/constants/theme';
+import { format } from 'date-fns';
 
 export default function StudentArrival() {
   const { reqId }   = useLocalSearchParams();
@@ -24,15 +24,41 @@ export default function StudentArrival() {
       setLoading(false);
     });
   }, [reqId]);
-
   async function sendArrival() {
     setSending(true);
     try {
-      // Backend records arrival, writes the notification, and pushes to GSO-2.
-      await apiPost(`/api/requests/${reqId}/arrival`);
+      const now     = new Date();
+      const timeStr = format(now, 'HH:mm');
+
+      await updateDoc(doc(db, 'requests', reqId), {
+        arrivalSent: true,
+        arrivalTime: timeStr,
+        actualReturn: timeStr,
+        arrivalSentAt: serverTimestamp(),
+      });
+
+      // Look up GSO-2 for this dept
+      const gso2Snap = await getDocs(query(collection(db, 'users'), where('role', '==', 'gso2'), where('dept', '==', profile.dept)));
+
+      // Create notification record (Cloud Function will push to FCM)
+      await addDoc(collection(db, 'notifications'), {
+        type:        'arrival',
+        fromUid:     profile.uid,
+        fromName:    profile.name,
+        serviceNumber: profile.serviceNumber,
+        dept:        profile.dept,
+        reqId,
+        arrivalTime: timeStr,
+        message:     `${profile.name} (${profile.serviceNumber}) has returned to mess at ${timeStr} hrs.`,
+        toRole:      'gso2',
+        toDept:      profile.dept,
+        read:        false,
+        createdAt:   serverTimestamp(),
+      });
+
       setDone(true);
     } catch (e) {
-      setError(e.message || 'Failed to send arrival. Please try again.');
+      setError('Failed to send arrival. Please try again.' + e.message);
     }
     setSending(false);
   }

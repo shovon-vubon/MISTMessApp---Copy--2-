@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { collection, query, where, orderBy, onSnapshot, limit, doc, deleteDoc } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from '../../firebase';
 import { useAuth } from '../../src/context/AuthContext';
 import { notify } from '../../src/utils/notify';
@@ -33,7 +34,29 @@ export default function StudentDashboard() {
   const [requests, setRequests] = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [refresh,  setRefresh]  = useState(false);
+  const [latestNotice, setLatestNotice] = useState(null);
+  const [seenNoticeId, setSeenNoticeId] = useState(undefined);
   const initialLoad = useRef(true);
+
+  useEffect(() => {
+    if (!profile) return;
+    const q = query(
+      collection(db, 'notices'),
+      where('dept', '==', profile.dept || ''),
+      orderBy('createdAt', 'desc'),
+      limit(1)
+    );
+    return onSnapshot(q, (snap) => {
+      setLatestNotice(snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() });
+    }, (err) => console.warn('Firestore error:', err.message));
+  }, [profile]);
+
+  useFocusEffect(useCallback(() => {
+    if (!profile) return;
+    AsyncStorage.getItem(`lastSeenNoticeId_${profile.uid}`).then(setSeenNoticeId);
+  }, [profile]));
+
+  const hasNewNotice = !!latestNotice && seenNoticeId !== undefined && latestNotice.id !== seenNoticeId;
 
   useEffect(() => {
     if (!profile) return;
@@ -125,6 +148,21 @@ export default function StudentDashboard() {
         </TouchableOpacity>
       )}
 
+      {/* New Notice Banner */}
+      {hasNewNotice && (
+        <TouchableOpacity
+          style={styles.noticeBanner}
+          onPress={() => router.push('/(student)/notices')}
+        >
+          <Text style={styles.noticeIcon}>📢</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.noticeTitle}>New Notice: {latestNotice.title || 'Untitled'}</Text>
+            <Text style={styles.noticeSub} numberOfLines={1}>{latestNotice.body}</Text>
+          </View>
+          <Text style={styles.noticeArrow}>{'→'}</Text>
+        </TouchableOpacity>
+      )}
+
       {/* Metrics */}
       <View style={styles.metrics}>
         <MetricCard value={requests.length} label="Total"    color={COLORS.text}  />
@@ -145,15 +183,17 @@ export default function StudentDashboard() {
 
       {/* Last Request */}
       {last && (
-        <View style={styles.card}>
+        <View style={styles.cardforLastRequest}>
+          <View style={{ flex: 2, justifyContent: 'flex-start', alignItems: 'flex-start' }}>
           <Text style={styles.cardTitle}>{'⊙'} Last Request</Text>
           <Text style={styles.cardDate}>{fmtDate(last.date)}</Text>
           <StatusBadge status={last.status} />
           <Text style={styles.cardCause}>{last.cause}</Text>
           <Text style={styles.cardMeta}>Departure: {last.outTime} {'·'} Return by: {last.expectedReturn}</Text>
+          </View>
           {last.remarks ? <Text style={styles.cardRemarks}>Remarks: {last.remarks}</Text> : null}
           {last.status === 'pending' && (
-          <View style={[styles.deleteDoc, { backgroundColor: COLORS.redBg, borderColor: COLORS.red, borderRadius: 6, paddingVertical: 6, paddingHorizontal: 10 }]}>
+          <View style={styles.deleteDoc}>
           <TouchableOpacity onPress={async () => {
             try {
               await deleteDoc(doc(db, 'requests', last.id));
@@ -164,7 +204,7 @@ export default function StudentDashboard() {
               alert('Error cancelling request: ' + err.message);
             }
           }}>
-          <Text style={{ color: COLORS.red, fontSize: 10, fontWeight: '800' }}>Cancel Request</Text>
+          <Text style={styles.deleteDocText}>Cancel Request</Text>
           </TouchableOpacity>
           </View>
           )}
@@ -227,6 +267,11 @@ const styles = StyleSheet.create({
   arrivalTitle:  { color: COLORS.amber, fontWeight: '700', fontSize: 13 },
   arrivalSub:    { color: COLORS.text2, fontSize: 11, marginTop: 2 },
   arrivalArrow:  { color: COLORS.amber, fontSize: 18, fontWeight: '700' },
+  noticeBanner:  { backgroundColor: COLORS.blueBg, borderWidth: 1, borderColor: COLORS.blue, borderRadius: 10, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 },
+  noticeIcon:    { fontSize: 22 },
+  noticeTitle:   { color: COLORS.blue, fontWeight: '700', fontSize: 13 },
+  noticeSub:     { color: COLORS.text2, fontSize: 11, marginTop: 2 },
+  noticeArrow:   { color: COLORS.blue, fontSize: 18, fontWeight: '700' },
   metrics:       { flexDirection: 'row', gap: 8, marginBottom: 14 },
   actions:       { flexDirection: 'row', gap: 10, marginBottom: 14 },
   btnGold:       { flex: 1, backgroundColor: COLORS.gold, borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
@@ -234,6 +279,7 @@ const styles = StyleSheet.create({
   btnGhost:      { flex: 1, borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
   btnGhostText:  { color: COLORS.text2, fontWeight: '700', fontSize: 12, letterSpacing: 0.8 },
   card:          { backgroundColor: COLORS.bg2, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, padding: 16, marginBottom: 14 },
+  cardforLastRequest: { flex: 1, flexDirection: 'row', backgroundColor: COLORS.bg2, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, padding: 16, marginBottom: 14 },
   cardTitle:     { color: COLORS.gold, fontSize: 13, fontWeight: '700', marginBottom: 10, letterSpacing: 0.5 },
   cardDate:      { color: COLORS.text2, fontSize: 12, marginBottom: 6 },
   cardCause:     { color: COLORS.text3, fontSize: 12, marginTop: 6 },
@@ -249,6 +295,6 @@ const styles = StyleSheet.create({
   tlCause:       { color: COLORS.text, fontSize: 12 },
   viewAllBtn:    { marginTop: 10, alignItems: 'center' },
   viewAllText:   { color: COLORS.gold, fontSize: 13, fontWeight: '600' },
-  deleteDoc:         { backgroundColor: COLORS.redBg, borderWidth: 1, borderColor: COLORS.red, borderRadius: 6, paddingVertical: 6, paddingHorizontal: 10 },
-  deleteDocText:     { color: COLORS.red, fontSize: 10, fontWeight: '800' },
+  deleteDoc:         { flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 10 },
+  deleteDocText:     { color: COLORS.red, fontSize: 12, fontWeight: '800',  backgroundColor: COLORS.redBg, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 , borderWidth: 1, borderColor: COLORS.red },
 });
