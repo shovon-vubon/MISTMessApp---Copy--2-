@@ -7,6 +7,27 @@ const {sendPushNotification} = require("./services/notificationService");
 
 setGlobalOptions({maxInstances: 10});
 
+const HIGH_PRIORITY_CAUSES = ["Medical Emergency", "Blood Donation"];
+const MEDIUM_PRIORITY_CAUSES = ["Family Meeting", "Other"];
+
+/**
+ * Derives request priority from the student's stated reason.
+ *
+ * @param {string} cause The reason text stored on the request.
+ * @return {string} One of "high", "medium", "low".
+ */
+function getPriority(cause) {
+  if (HIGH_PRIORITY_CAUSES.includes(cause)) return "high";
+  if (MEDIUM_PRIORITY_CAUSES.includes(cause)) return "medium";
+  return "low";
+}
+
+const PRIORITY_LABELS = {
+  high: "🔴 HIGH PRIORITY",
+  medium: "🟡 MEDIUM PRIORITY",
+  low: "",
+};
+
 
 exports.deleteUserAccount = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
@@ -108,6 +129,11 @@ exports.notifyGsoOnNewRequest = onDocumentCreated(
     },
     async (event) => {
       const request = event.data.data();
+      const priority = request.priority || getPriority(request.cause);
+      const priorityLabel = PRIORITY_LABELS[priority];
+      const title = priorityLabel ?
+        `${priorityLabel}: New Out Pass Request` :
+        "New Out Pass Request";
 
       const gsoUsersSnapshot = await admin.firestore().collection("users")
           .where("role", "==", "gso2")
@@ -119,11 +145,12 @@ exports.notifyGsoOnNewRequest = onDocumentCreated(
       gsoUsersSnapshot.forEach((doc) => {
         promises.push(sendPushNotification(
             doc.id,
-            "New Out Pass Request",
+            title,
             `${request.studentName} has submitted a new out pass request.`,
             {
               type: "new-request",
               requestId: event.params.requestId,
+              priority,
             },
         ));
       });

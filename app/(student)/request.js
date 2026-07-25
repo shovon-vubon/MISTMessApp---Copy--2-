@@ -8,6 +8,7 @@ import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'fire
 import { db } from '../../firebase';
 import { useAuth } from '../../src/context/AuthContext';
 import { COLORS } from '../../src/constants/theme';
+import { getPriority } from '../../src/utils/priority';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Pressable } from 'react-native';
 
@@ -166,6 +167,7 @@ export default function StudentRequest() {
         expectedReturn: returnTime,
         actualReturn:   null,
         cause:          cause.trim(),
+        priority:       getPriority(cause.trim()),
         status:         'pending',
         approvedBy:     null,
         approvedByName: null,
