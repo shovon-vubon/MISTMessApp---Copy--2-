@@ -8,7 +8,9 @@ const {sendPushNotification} = require("./services/notificationService");
 setGlobalOptions({maxInstances: 10});
 
 const HIGH_PRIORITY_CAUSES = ["Medical Emergency", "Blood Donation"];
-const MEDIUM_PRIORITY_CAUSES = ["Family Meeting", "Other"];
+const MEDIUM_PRIORITY_CAUSES = ["Family Meeting"];
+const HIGH_PRIORITY_KEYWORDS = /\b(emg|emergency)\b/i;
+const MEDIUM_PRIORITY_KEYWORDS = /\b(mdm|medium)\b/i;
 
 /**
  * Derives request priority from the student's stated reason.
@@ -19,6 +21,8 @@ const MEDIUM_PRIORITY_CAUSES = ["Family Meeting", "Other"];
 function getPriority(cause) {
   if (HIGH_PRIORITY_CAUSES.includes(cause)) return "high";
   if (MEDIUM_PRIORITY_CAUSES.includes(cause)) return "medium";
+  if (HIGH_PRIORITY_KEYWORDS.test(cause)) return "high";
+  if (MEDIUM_PRIORITY_KEYWORDS.test(cause)) return "medium";
   return "low";
 }
 

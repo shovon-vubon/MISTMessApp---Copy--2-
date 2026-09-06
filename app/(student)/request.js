@@ -29,6 +29,14 @@ export default function StudentRequest() {
   const [showReturnPicker, setShowReturnPicker] = useState(false);
   const [showReasonPicker, setShowReasonPicker] = useState(false);
   const [selectedReason, setSelectedReason]     = useState('');
+  const [showTip, setShowTip]     = useState(false);
+  const tipTimer = React.useRef(null);
+
+  const toggleTip = () => {
+    clearTimeout(tipTimer.current);
+    setShowTip(true);
+    tipTimer.current = setTimeout(() => setShowTip(false), 4000);
+  };
 
   const REASONS = ['Medical Emergency', 'Family Meeting', 'Blood Donation', 'Visiting Restaurant','Attending Wedding','Shopping','Other'];
 
@@ -127,6 +135,8 @@ export default function StudentRequest() {
     setSuccess(false);
     setBusy(false);
     setConfirm(false);
+    setShowTip(false);
+    return () => clearTimeout(tipTimer.current);
   }, []));
 
   const isCurfew = () => {
@@ -211,6 +221,7 @@ export default function StudentRequest() {
             onChangeText={setDate}
             placeholder="YYYY-MM-DD"
             placeholderTextColor={COLORS.text3}
+            editable={false}
             {...Platform.select({ web: { type: 'date' } })}
           />
 
@@ -268,11 +279,28 @@ export default function StudentRequest() {
           />
 
           {selectedReason === 'Other' && (
-            <TextInput
-              style={[s.input, s.textarea]} placeholderTextColor={COLORS.text3}
-              placeholder="State your reason clearly…"
-              value={cause} onChangeText={setCause} multiline numberOfLines={4}
-            />
+            <>
+              <View style={s.tipRow}>
+                <Text style={s.tipRowLabel}>Priority is set from keywords in your text</Text>
+                <TouchableOpacity style={s.infoBtn} onPress={toggleTip}>
+                  <Text style={s.infoBtnText}>i</Text>
+                </TouchableOpacity>
+              </View>
+              {showTip && (
+                <View style={s.tipBox}>
+                  <Text style={s.tipText}>
+                    Include "emg" or "emergency" for HIGH priority.{'\n'}
+                    Include "mdm" or "medium" for MEDIUM priority.{'\n'}
+                    Otherwise your request is treated as LOW priority.
+                  </Text>
+                </View>
+              )}
+              <TextInput
+                style={[s.input, s.textarea]} placeholderTextColor={COLORS.text3}
+                placeholder="State your reason clearly…"
+                value={cause} onChangeText={setCause} multiline numberOfLines={4}
+              />
+            </>
           )}
 
           {!!error && <Text style={s.error}>{error}</Text>}
@@ -342,6 +370,12 @@ const s = StyleSheet.create({
   timeItemText: { color: COLORS.text2, fontSize: 16 },
   timeItemTextSel: { color: COLORS.gold, fontWeight: '700' },
   textarea:    { height: 90, textAlignVertical: 'top' },
+  tipRow:      { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+  tipRowLabel: { color: COLORS.text3, fontSize: 11, flex: 1 },
+  infoBtn:     { width: 18, height: 18, borderRadius: 9, borderWidth: 1, borderColor: COLORS.gold, alignItems: 'center', justifyContent: 'center' },
+  infoBtnText: { color: COLORS.gold, fontSize: 11, fontWeight: '800' },
+  tipBox:      { backgroundColor: COLORS.bg3, borderRadius: 8, padding: 10, marginBottom: 10, borderWidth: 1, borderColor: COLORS.gold },
+  tipText:     { color: COLORS.text2, fontSize: 11, lineHeight: 16 },
   warnBox:     { backgroundColor: COLORS.amberBg, borderRadius: 6, padding: 8, marginBottom: 10, borderWidth: 1, borderColor: COLORS.amber },
   warnText:    { color: COLORS.amber, fontSize: 12 },
   error:       { color: COLORS.red, fontSize: 12, marginBottom: 10 },
