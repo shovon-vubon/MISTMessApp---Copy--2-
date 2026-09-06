@@ -1047,6 +1047,19 @@ export default function GSO2Records() {
 
 
     return res;
+  }, [all, filters]);
+
+  // ==========================================================
+  // SEPARATE TIMEOUT REQUESTS
+  // ==========================================================
+
+  const timeoutRequests = useMemo(() => {
+    return filtered.filter(r => r.status === 'timeout');
+  }, [filtered]);
+
+  const regularRequests = useMemo(() => {
+    return filtered.filter(r => r.status !== 'timeout');
+  }, [filtered]);
 
   }, [all, filters]);
 
@@ -1359,111 +1372,258 @@ const printReport = async () => {
         )}
 
 
-      {filtered.map((r) => (
+      {/* ===================================================
+          REGULAR REQUESTS SECTION
+          =================================================== */}
 
-        <View
-          key={r.id}
-          style={s.card}
-        >
+      {regularRequests.length > 0 && (
 
-          <View style={s.cardHeader}>
+        <View style={{ marginBottom: 20 }}>
 
-            <View style={{ flex: 1 }}>
-
-              <Text style={s.name}>
-                {r.studentName}
-              </Text>
-
-              <Text style={s.svc}>
-
-                {r.serviceNumber}
-                {' · '}
-                {r.rank}
-                {' · '}
-                {fmtDate(r.date)}
-
-              </Text>
-
-            </View>
-
-            <StatusBadge
-              status={r.status}
-            />
-
-          </View>
-
-
-          <Text
-            style={s.cause}
-            numberOfLines={2}
-          >
-            {r.cause}
+          <Text style={[
+            s.heading,
+            { marginLeft: 12, marginTop: 10, marginBottom: 10, fontSize: 16, color: '#333' }
+          ]}>
+            📋 PENDING & PROCESSED
           </Text>
 
+          {regularRequests.map((r) => (
 
-          <View style={s.times}>
+            <View
+              key={r.id}
+              style={s.card}
+            >
 
-            <View style={s.timeItem}>
+              <View style={s.cardHeader}>
 
-              <Text style={s.timeLabel}>
-                OUT
+                <View style={{ flex: 1 }}>
+
+                  <Text style={s.name}>
+                    {r.studentName}
+                  </Text>
+
+                  <Text style={s.svc}>
+
+                    {r.serviceNumber}
+                    {' · '}
+                    {r.rank}
+                    {' · '}
+                    {fmtDate(r.date)}
+
+                  </Text>
+
+                </View>
+
+                <StatusBadge
+                  status={r.status}
+                />
+
+              </View>
+
+
+              <Text
+                style={s.cause}
+                numberOfLines={2}
+              >
+                {r.cause}
               </Text>
 
-              <Text style={s.timeVal}>
-                {r.outTime}
-              </Text>
+
+              <View style={s.times}>
+
+                <View style={s.timeItem}>
+
+                  <Text style={s.timeLabel}>
+                    OUT
+                  </Text>
+
+                  <Text style={s.timeVal}>
+                    {r.outTime}
+                  </Text>
+
+                </View>
+
+
+                <View style={s.timeItem}>
+
+                  <Text style={s.timeLabel}>
+                    RETURN BY
+                  </Text>
+
+                  <Text style={s.timeVal}>
+                    {r.expectedReturn}
+                  </Text>
+
+                </View>
+
+
+                <View style={s.timeItem}>
+
+                  <Text style={s.timeLabel}>
+                    ACTUAL
+                  </Text>
+
+                  <Text style={s.timeVal}>
+                    {r.actualReturn || '—'}
+                  </Text>
+
+                </View>
+
+              </View>
+
+
+              {r.remarks ? (
+
+                <Text style={s.remarks}>
+                  Remarks: {r.remarks}
+                </Text>
+
+              ) : null}
+
+
+              {r.arrivalSent && (
+
+                <Text style={s.arrival}>
+                  ✓ Arrived at {r.arrivalTime} hrs
+                </Text>
+
+              )}
 
             </View>
 
-
-            <View style={s.timeItem}>
-
-              <Text style={s.timeLabel}>
-                RETURN BY
-              </Text>
-
-              <Text style={s.timeVal}>
-                {r.expectedReturn}
-              </Text>
-
-            </View>
-
-
-            <View style={s.timeItem}>
-
-              <Text style={s.timeLabel}>
-                ACTUAL
-              </Text>
-
-              <Text style={s.timeVal}>
-                {r.actualReturn || '—'}
-              </Text>
-
-            </View>
-
-          </View>
-
-
-          {r.remarks ? (
-
-            <Text style={s.remarks}>
-              Remarks: {r.remarks}
-            </Text>
-
-          ) : null}
-
-
-          {r.arrivalSent && (
-
-            <Text style={s.arrival}>
-              ✓ Arrived at {r.arrivalTime} hrs
-            </Text>
-
-          )}
+          ))}
 
         </View>
 
-      ))}
+      )}
+
+
+      {/* ===================================================
+          TIMEOUT / TIME OVER REQUESTS SECTION
+          =================================================== */}
+
+      {timeoutRequests.length > 0 && (
+
+        <View style={{ marginBottom: 20, borderTopWidth: 2, borderTopColor: '#ff6b6b', paddingTop: 15 }}>
+
+          <Text style={[
+            s.heading,
+            { marginLeft: 12, marginBottom: 10, fontSize: 16, color: '#ff6b6b' }
+          ]}>
+            ⏱ TIME OVER / EXPIRED
+          </Text>
+
+          <Text style={[
+            s.sub,
+            { marginLeft: 12, marginBottom: 12, color: '#999', fontSize: 13 }
+          ]}>
+            {timeoutRequests.length} request(s) expired without approval/rejection
+          </Text>
+
+          {timeoutRequests.map((r) => (
+
+            <View
+              key={r.id}
+              style={[s.card, { borderLeftWidth: 4, borderLeftColor: '#ff6b6b', backgroundColor: '#fff9f9' }]}
+            >
+
+              <View style={s.cardHeader}>
+
+                <View style={{ flex: 1 }}>
+
+                  <Text style={s.name}>
+                    {r.studentName}
+                  </Text>
+
+                  <Text style={s.svc}>
+
+                    {r.serviceNumber}
+                    {' · '}
+                    {r.rank}
+                    {' · '}
+                    {fmtDate(r.date)}
+
+                  </Text>
+
+                </View>
+
+                <StatusBadge
+                  status={r.status}
+                />
+
+              </View>
+
+
+              <Text
+                style={s.cause}
+                numberOfLines={2}
+              >
+                {r.cause}
+              </Text>
+
+
+              <View style={s.times}>
+
+                <View style={s.timeItem}>
+
+                  <Text style={s.timeLabel}>
+                    OUT
+                  </Text>
+
+                  <Text style={s.timeVal}>
+                    {r.outTime}
+                  </Text>
+
+                </View>
+
+
+                <View style={s.timeItem}>
+
+                  <Text style={s.timeLabel}>
+                    RETURN BY
+                  </Text>
+
+                  <Text style={[s.timeVal, { color: '#ff6b6b', fontWeight: 'bold' }]}>
+                    {r.expectedReturn}
+                  </Text>
+
+                </View>
+
+
+                <View style={s.timeItem}>
+
+                  <Text style={s.timeLabel}>
+                    ACTUAL
+                  </Text>
+
+                  <Text style={s.timeVal}>
+                    {r.actualReturn || '—'}
+                  </Text>
+
+                </View>
+
+              </View>
+
+
+              <Text style={[s.remarks, { color: '#ff6b6b', fontStyle: 'italic' }]}>
+                ⚠️ Timeout: GSO2 did not respond by {r.expectedReturn} hrs
+              </Text>
+
+              {r.remarks && (
+
+                <Text style={s.remarks}>
+                  Original Remarks: {r.remarks}
+                </Text>
+
+              )}
+
+            </View>
+
+          ))}
+
+        </View>
+
+      )}
 
     </ScrollView>
 
